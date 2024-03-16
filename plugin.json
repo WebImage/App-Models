@@ -1,0 +1,14 @@
+{
+  "id": "webimage/models",
+  "name": "Instant Models",
+  "version": "1.0.0",
+  "author": {
+    "name": "Robert Jones II",
+    "email": "rjones@corporatewebimage.com"
+  },
+  "requirements": {
+    "plugins": {
+      "webimage/db": "1.0.0"
+    }
+  }
+}
