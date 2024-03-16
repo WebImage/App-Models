@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://webimage.dev/model.schema.json",
+  "title": "Model",
+  "description": "A database model",
+  "type": "object",
+  "properties": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string",
+        "description": "Machine friendly name for a model in the singular"
+      },
+      "plural": {
+        "type": "string",
+        "description": "Machine friendly name for a model in the plural"
+      },
+      "friendly": {
+        "type": "string",
+        "description": "User readable name for the model"
+      },
+      "pluralFriendly": {
+        "type" : "string",
+        "description": "User readable pluralized name for the model"
+      },
+      "properties": {
+        "type": "object",
+        "description": "propName-definition pair of properties"
+      }
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "webimage/app-models",
+  "type": "library",
+  "autoload": {
+    "psr-4": {
+      "WebImage\\Models\\": "src/"
+    }
+  },
+  "authors": [
+    {
+      "name": "Robert Jones II",
+      "email": "rjones@corporatewebimage.com"
+    }
+  ],
+  "require": {
+    "symfony/yaml": "^5.3",
+    "doctrine/lexer": "^1.2",
+    "psr/log": "^1.1"
+  }
+}

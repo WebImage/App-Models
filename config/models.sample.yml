@@ -1,0 +1,39 @@
+user:
+  friendly: User
+  pluralFriendly: Users
+  plural: users
+  properties:
+    id: integer
+    username: string
+    password: string
+    type: string(1)
+    favoriteColors:
+      type: string[]
+      choices: # Not yet implemented
+        - red: Red
+        - orange: Orange
+        - yellow: Yellow
+        - green: Green
+        - blue: Blue
+        - purple: Purple
+        - black: Black
+        - brown: Brown
+    roles: "#roles(userRoles)" # Creates reference from "users" to "roles" using an intermediary table "userRoles."  Intermediary tables that do not have an actual definition will automatically get created
+  primaryKey: # Optional if "id" is a defined property
+    - id
+  events: # Not yet implemented
+    create:
+    read:
+    update:
+    delete:
+
+roles:
+  friendly: Role
+  plural: Roles
+  properties:
+    "@key": string
+    name: string
+
+people:
+  properties:
+    "@personId": integer+ # Primary key with aut incrementing value
