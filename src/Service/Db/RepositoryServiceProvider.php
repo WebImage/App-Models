@@ -62,10 +62,16 @@ class RepositoryServiceProvider extends AbstractServiceProvider
 		/**
 		 * Add models to dictionary
 		 */
-		$models  = DictionaryTypeHelper::load($config->get('models'));
+		$modelFiles = $config->get('models');
+		$modelFiles = is_array($modelFiles) ? $modelFiles : [$modelFiles];
 
-		foreach($models as $model) {
-			$dict->addModel($model);
+		foreach($modelFiles as $modelFile) {
+			foreach(glob($modelFile) as $file) {
+				$models = DictionaryTypeHelper::load($file);
+				foreach($models as $model) {
+					$dict->addModel($model);
+				}
+			}
 		}
 
 		/**
