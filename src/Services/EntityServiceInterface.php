@@ -11,6 +11,9 @@ use WebImage\Models\Query\QueryBuilder;
 
 interface EntityServiceInterface extends RepositoryAwareInterface
 {
+	const EVENT_SAVING = 'repository.entity.saving';
+	const EVENT_SAVED = 'repository.entity.saved';
+
 	public function get(): Entity;
 
 	/**
