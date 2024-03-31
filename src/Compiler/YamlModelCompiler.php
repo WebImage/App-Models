@@ -4,7 +4,7 @@ namespace WebImage\Models\Compiler;
 
 use Symfony\Component\Yaml\Yaml;
 use WebImage\Models\Defs\ModelDefinition;
-use WebImage\Models\Service\Db\DoctrineTypeMap;
+use WebImage\Models\Services\Db\DoctrineTypeMap;
 
 class YamlModelCompiler extends ModelCompiler
 {

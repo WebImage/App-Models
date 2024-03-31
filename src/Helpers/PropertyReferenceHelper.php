@@ -4,7 +4,7 @@ namespace WebImage\Models\Helpers;
 
 use WebImage\Models\Defs\PropertyDefinition;
 use WebImage\Models\Defs\PropertyReferenceCardinality;
-use WebImage\Models\Service\ModelServiceInterface;
+use WebImage\Models\Services\ModelServiceInterface;
 
 class PropertyReferenceHelper
 {

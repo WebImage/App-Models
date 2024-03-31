@@ -7,7 +7,7 @@ use WebImage\Models\Defs\PropertyPathDefinition;
 use WebImage\Models\Defs\PropertyReferenceDefinition;
 use WebImage\Models\Defs\ModelDefinitionInterface;
 use WebImage\Models\Parsers\PropertyDefinitionParser;
-use WebImage\Models\Service\Db\DoctrineTypeMap;
+use WebImage\Models\Services\Db\DoctrineTypeMap;
 use WebImage\Models\Defs\ModelDefinition;
 use WebImage\Models\Defs\PropertyDefinition;
 use WebImage\Models\Security\RoleAccessInterface;

@@ -10,7 +10,7 @@ use WebImage\Models\Properties\MultiValuePropertyInterface;
 use WebImage\Models\Properties\Property;
 use WebImage\Models\Properties\PropertyInterface;
 use WebImage\Models\Properties\SingleValuePropertyInterface;
-use WebImage\Models\Service\RepositoryInterface;
+use WebImage\Models\Services\RepositoryInterface;
 
 class EntityDebugger
 {

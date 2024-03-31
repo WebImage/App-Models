@@ -6,7 +6,7 @@ use WebImage\Core\Collection;
 use WebImage\Core\Dictionary;
 use WebImage\Models\Entities\Entity;
 use WebImage\Models\Entities\EntityStub;
-use WebImage\Models\Service\EntityServiceInterface;
+use WebImage\Models\Services\EntityServiceInterface;
 
 class QueryBuilder
 {

@@ -7,8 +7,8 @@ use Exception;
 use WebImage\Models\Defs\ModelDefinition;
 use WebImage\Models\Defs\ModelDefinitionInterface;
 use WebImage\Models\Defs\PropertyDefinition;
-use WebImage\Models\Service\RepositoryAwareInterface;
-use WebImage\Models\Service\RepositoryAwareTrait;
+use WebImage\Models\Services\RepositoryAwareInterface;
+use WebImage\Models\Services\RepositoryAwareTrait;
 
 class Model implements RepositoryAwareInterface
 {

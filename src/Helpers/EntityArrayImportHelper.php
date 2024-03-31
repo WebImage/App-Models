@@ -11,8 +11,8 @@ use WebImage\Models\Exceptions\MissingModelException;
 use WebImage\Models\Exceptions\InvalidPropertyException;
 use WebImage\Models\Exceptions\MissingPropertyException;
 use WebImage\Models\Properties\MultiValuePropertyInterface;
-use WebImage\Models\Service\EntityServiceInterface;
-use WebImage\Models\Service\RepositoryInterface;
+use WebImage\Models\Services\EntityServiceInterface;
+use WebImage\Models\Services\RepositoryInterface;
 
 class EntityArrayImportHelper
 {

@@ -14,8 +14,8 @@ use WebImage\Models\Defs\PropertyPathDefinition;
 use WebImage\Models\Defs\ModelDefinition;
 use WebImage\Models\Entities\Model;
 use WebImage\Models\Helpers\PropertyReferenceHelper;
-use WebImage\Models\Service\ModelServiceInterface;
-use WebImage\Models\Service\RepositoryInterface;
+use WebImage\Models\Services\ModelServiceInterface;
+use WebImage\Models\Services\RepositoryInterface;
 use WebImage\Models\Compiler\YamlModelCompiler;
 
 class ImportModelsCommand extends AbstractCommand

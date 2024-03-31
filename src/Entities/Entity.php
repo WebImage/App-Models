@@ -4,9 +4,9 @@ namespace WebImage\Models\Entities;
 
 use WebImage\Models\Defs\PropertyDefinition;
 use WebImage\Models\Properties\InvalidPropertyException;
-use WebImage\Models\Service\RepositoryAwareInterface;
-use WebImage\Models\Service\RepositoryAwareTrait;
-use WebImage\Models\Service\RepositoryInterface;
+use WebImage\Models\Services\RepositoryAwareInterface;
+use WebImage\Models\Services\RepositoryAwareTrait;
+use WebImage\Models\Services\RepositoryInterface;
 
 class Entity extends EntityStub implements RepositoryAwareInterface
 {
