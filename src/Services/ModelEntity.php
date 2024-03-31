@@ -11,7 +11,7 @@ use WebImage\Models\Entities\EntityStub;
 /**
  * @template T
  */
-abstract class EntityAdapter
+abstract class ModelEntity
 {
 	protected EntityStub $entity;
 
