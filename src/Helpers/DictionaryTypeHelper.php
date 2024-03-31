@@ -4,6 +4,7 @@ namespace WebImage\Models\Helpers;
 
 use WebImage\Config\Config;
 use WebImage\Models\Compiler\YamlModelCompiler;
+use WebImage\Models\Defs\ModelDefinition;
 
 class DictionaryTypeHelper
 {
@@ -28,13 +29,20 @@ class DictionaryTypeHelper
 
 	/**
 	 * @param string $typeFile
-	 * @return array|\WebImage\Models\Defs\ModelDefinition[]
+	 * @return ModelDefinition[]
 	 */
 	private static function loadFromFile(string $typesFile)
 	{
 		$parser = new YamlModelCompiler();
+		$models = [];
 
-		return $parser->compileFile($typesFile);
+		foreach(glob($typesFile) as $file) {
+			foreach($parser->compileFile($file) as $model) {
+				$models[] = $model;
+			}
+		}
+
+		return $models;
 	}
 
 	/**
