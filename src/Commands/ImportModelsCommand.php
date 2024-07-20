@@ -22,6 +22,9 @@ class ImportModelsCommand extends AbstractCommand
 {
 	protected function configure()
 	{
+		$this->setName('models:import')
+			->setDescription('Imports models from configured \'webimage/models\' config key')
+			->setHelp('Import models from YAML files');
 		$this->addOption('watch', 'w', InputOption::VALUE_NONE, 'Watch the types file for updates and automatically import new types');
 		$this->addOption('limit-model', 'm', InputOption::VALUE_REQUIRED, 'Limit the model(s) to be dumped.  Specify multiple models comma delimited');
 		$this->addOption('debug', 'd', InputOption::VALUE_NONE, 'Dumps the structure of an import without importing any actual values');
@@ -29,13 +32,15 @@ class ImportModelsCommand extends AbstractCommand
 
 	protected function execute(InputInterface $input, OutputInterface $output)
 	{
-		if (($modelsFile = $this->getModelsFile($output)) === null) return;
+		if (($modelsFile = $this->getModelsFile($output)) === null) return 0;
 
 		if ($input->getOption('watch')) {
 			$this->watch($input, $output, $modelsFile);
 		} else {
 			$this->importModels($input, $output, $modelsFile);
 		}
+
+		return 0;
 	}
 
 	protected function watch(InputInterface $input, OutputInterface $output, string $modelsFile)
@@ -180,13 +185,13 @@ class ImportModelsCommand extends AbstractCommand
 	{
 		$config = $this->getApp()->getConfig()->get('webimage/models');
 		if (null === $config) {
-			$output->writeln('Missing webimage/models config key');
+			$output->writeln('Missing \'webimage/models\' config key');
 			return null;
 		}
 
 		$modelsFile = $config->get('models');
 		if (null === $modelsFile) {
-			$output->writeln('Missing "models" key from webimage/models config');
+			$output->writeln('Missing "models" key from \'webimage/models\' config');
 			return null;
 		}
 

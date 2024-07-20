@@ -5,10 +5,14 @@ use WebImage\Models\Properties\ValueMapper\BooleanMapper;
 use WebImage\Models\Properties\ValueMapper\DateTimeMapper;
 use WebImage\Models\Properties\ValueMapper\DoubleMapper;
 use WebImage\Models\Properties\ValueMapper\IntegerMapper;
-use WebImage\Models\View\EntityDetailHelper;
 use WebImage\Models\View\EntityListHelper;
 
 return [
+	'console' => [
+		'commands' => [
+			\WebImage\Models\Commands\ImportModelsCommand::class
+		]
+	],
 	'webimage/models' => [
 		'dataValueMappers' => [
 //			'node-ref' => NodeRefMapper::class,
