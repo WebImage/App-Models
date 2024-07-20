@@ -20,7 +20,8 @@ class DictionaryTypeHelper
 		return $types;
 	}
 
-	private static function loadByType($types) {
+	private static function loadByType($types): array
+	{
 		if (is_string($types)) return self::loadFromFile($types);
 		else if (is_iterable($types)) return self::loadFromArray($types);
 
@@ -28,10 +29,10 @@ class DictionaryTypeHelper
 	}
 
 	/**
-	 * @param string $typeFile
+	 * @param string $typesFile
 	 * @return ModelDefinition[]
 	 */
-	private static function loadFromFile(string $typesFile)
+	private static function loadFromFile(string $typesFile): array
 	{
 		$parser = new YamlModelCompiler();
 		$models = [];
@@ -46,9 +47,10 @@ class DictionaryTypeHelper
 	}
 
 	/**
-	 * @param iterable $types
+	 * @param iterable $loadTypes
+	 * @return array
 	 */
-	private static function loadFromArray(iterable $loadTypes)
+	private static function loadFromArray(iterable $loadTypes): array
 	{
 		$types = [];
 
