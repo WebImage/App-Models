@@ -343,7 +343,7 @@ class EntityQueryService
 		$whereConditions = [];
 		$modelName = $filter->getModelName() === null ? $query->getFrom() : $filter->getModelName();
 
-		$propDef = $this->getRepository()->getDictionaryService()->getModel($modelName)->getProperty($filter->getProperty());
+		$propDef = $this->getRepository()->getDictionaryService()->getModelDefinition($modelName)->getProperty($filter->getProperty());
 
 		if ($propDef === null) throw new \InvalidArgumentException('Invalid property in query: ' . $filter->getProperty());
 		else if ($propDef->isMultiValued()) return [];
@@ -465,7 +465,7 @@ class EntityQueryService
 		if ($propDef->isVirtual() && $propDef->hasReference()) {
 			foreach($useValues as $ix => $useValue) {
 				if ($useValue instanceof EntityStub) {
-					$referencedModel = $this->entityService->getRepository()->getDictionaryService()->getModel($propDef->getReference()->getTargetModel());
+					$referencedModel = $this->entityService->getRepository()->getDictionaryService()->getModelDefinition($propDef->getReference()->getTargetModel());
 					foreach ($referencedModel->getPrimaryKeys()->keys() as $primaryKey) {
 						$useValues[$ix] = $useValue->getPropertyValue($primaryKey);
 					}

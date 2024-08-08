@@ -9,14 +9,14 @@ use WebImage\Models\Security\RoleAccessInterface;
 
 class ModelDefinition implements ModelDefinitionInterface
 {
-	private $name = ''; // Machine name
-	private $pluralName = ''; // Machine name
-	private $friendly = ''; // User-friendly  name of this type
-	private $pluralFriendly = ''; // User-friendly plural name of this type
-	private $security = [];
-	private $config;
+	private string $name           = ''; // Machine name
+	private string $pluralName     = ''; // Machine name
+	private string $friendly       = ''; // User-friendly  name of this type
+	private string $pluralFriendly = ''; // User-friendly plural name of this type
+	private array  $security       = [];
+	private Config $config;
 //	private $endpoint = '';
-	private $properties;
+	private Dictionary $properties;
 
 	/**
 	 * TypeDefinition constructor.

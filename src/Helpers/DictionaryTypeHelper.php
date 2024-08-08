@@ -15,9 +15,7 @@ class DictionaryTypeHelper
 	 */
 	public static function load($types): array
 	{
-		$types = self::loadByType($types);
-
-		return $types;
+		return self::loadByType($types);
 	}
 
 	private static function loadByType($types): array

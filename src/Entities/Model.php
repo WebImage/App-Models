@@ -62,7 +62,7 @@ class Model implements RepositoryAwareInterface
 		return $def;
 	}
 
-	public function getModelStack()
+	public function getModelStack(): array
 	{
 		return [$this];
 	}

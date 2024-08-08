@@ -20,7 +20,7 @@ abstract class ModelEntity
 		$this->entity = $entity;
 	}
 
-	public function getEntity(): EntityStub
+	public function getEntity(): Entity
 	{
 		return $this->entity;
 	}

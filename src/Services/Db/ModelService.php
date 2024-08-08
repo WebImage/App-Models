@@ -2,20 +2,19 @@
 
 namespace WebImage\Models\Services\Db;
 
+use Exception;
 use WebImage\Db\ConnectionManager;
 use WebImage\Models\Entities\Model;
 use WebImage\Models\Services\AbstractModelService;
-use WebImage\Models\Services\Exception;
 use WebImage\Models\Services\ModelServiceInterface;
 
 class ModelService extends AbstractModelService implements ModelServiceInterface
 {
 	/** @var ConnectionManager */
-	private $connectionManager;
-	/** @var TableNameHelper */
-	private $tableNameHelper;
-	/** @var DoctrineTableCreator */
-	private $tableCreator;
+	private ConnectionManager     $connectionManager;
+	private ?DoctrineTableCreator $tableCreator;
+	private TableNameHelper       $tableNameHelper;
+
 	/**
 	 * ModelService constructor.
 	 */
@@ -23,6 +22,7 @@ class ModelService extends AbstractModelService implements ModelServiceInterface
 	{
 		$this->connectionManager = $connectionManager;
 		$this->tableNameHelper   = $tableNameHelper;
+		$this->tableCreator      = null;
 	}
 
 	public function save(Model $model): ?Model
@@ -32,9 +32,12 @@ class ModelService extends AbstractModelService implements ModelServiceInterface
 		return $model;
 	}
 
+	/**
+	 * @throws Exception
+	 */
 	public function delete(Model $model): bool
 	{
-		throw new \Exception(__METHOD__  . ' is not supported by this ModelService');
+		throw new Exception(__METHOD__ . ' is not supported by this ModelService');
 	}
 
 	/**

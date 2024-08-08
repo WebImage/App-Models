@@ -3,20 +3,24 @@
 namespace WebImage\Models\Services;
 
 use WebImage\Models\Defs\ModelDefinition;
+use WebImage\Models\Defs\ModelDefinitionInterface;
 use WebImage\Models\Entities\Model;
 
 abstract class AbstractModelService implements ModelServiceInterface
 {
 	use RepositoryAwareTrait;
 
-	public function all()
+	/**
+	 * @return ModelDefinitionInterface[]
+	 */
+	public function all(): array
 	{
-		return $this->getRepository()->getDictionaryService()->getModels();
+		return $this->getRepository()->getDictionaryService()->getModelDefinitions();
 	}
 
 	public function getModel(string $name): ?Model
 	{
-		$def = $this->getRepository()->getDictionaryService()->getModel($name);
+		$def = $this->getRepository()->getDictionaryService()->getModelDefinition($name);
 
 		$model = null;
 
@@ -38,7 +42,7 @@ abstract class AbstractModelService implements ModelServiceInterface
 		$model->setDef($modelDef);
 
 		// Add type definition to dictionary
-		$this->getRepository()->getDictionaryService()->addModel($modelDef);
+		$this->getRepository()->getDictionaryService()->addModelDefinition($modelDef);
 
 		return $model;
 	}

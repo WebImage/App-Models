@@ -13,36 +13,36 @@ class DictionaryService implements RepositoryAwareInterface
 	/**
 	 * @property Dictionary of ModelDef
 	 */
-	private $models;
+	private Dictionary $modelDefs;
 	/**
 	 * @property Dictionary<string $alias, string $modelName>
 	 */
-	private $modelAliases;
+	private Dictionary $modelAliases;
 	/**
 	 * @property array[string]DataType Dictionary of DataType
 	 */
-	private $propertyTypes;
+	private Dictionary $propertyTypes;
 	/**
 	 * @var Dictionary
 	 */
-	private $propertyTypesAliases;
+	private Dictionary $propertyTypesAliases;
 //	/**
 //	 * @property Dictionary of NodeAssociationDef
 //	 */
 //	private $associations;
+	private Dictionary $propertyTypeAliases;
 
 	public function __construct()
 	{
 		/**
 		 * Instantiate type object
 		 */
-		$this->models = new Dictionary();
+		$this->modelDefs    = new Dictionary();
 		$this->modelAliases = new Dictionary();
 		/**
 		 * Instantiate property types object
 		 */
-		$this->propertyTypes = new Dictionary();
-
+		$this->propertyTypes       = new Dictionary();
 		$this->propertyTypeAliases = new Dictionary();
 	}
 
@@ -53,32 +53,32 @@ class DictionaryService implements RepositoryAwareInterface
 	 *
 	 * @return mixed|null
 	 */
-	public function getModel(string $name): ?ModelDefinitionInterface
+	public function getModelDefinition(string $name): ?ModelDefinitionInterface
 	{
 		/**
 		 * If no model is found under $name, then check if there is an alias to the correct name
 		 */
-		if (!$this->models->has($name) && $this->modelAliases->has($name)) {
+		if (!$this->modelDefs->has($name) && $this->modelAliases->has($name)) {
 			$name = $this->modelAliases->get($name);
 		}
 
-		return $this->models->get($name);
+		return $this->modelDefs->get($name);
 	}
 
 	/**
-	 * @return Dictionary|ModelDefinitionInterface[] A dictionary of defined models
+	 * @return ModelDefinitionInterface[] A dictionary of defined models
 	 */
-	public function getModels()
+	public function getModelDefinitions(): array
 	{
-		return $this->models;
+		return array_values($this->modelDefs->toArray());
 	}
 
 	/**
 	 * @param ModelDefinitionInterface $model
 	 */
-	public function addModel(ModelDefinitionInterface $model)
+	public function addModelDefinition(ModelDefinitionInterface $model)
 	{
-		$this->models->set($model->getName(), $model);
+		$this->modelDefs->set($model->getName(), $model);
 		$this->modelAliases->set($model->getPluralName(), $model->getName());
 	}
 
@@ -93,7 +93,7 @@ class DictionaryService implements RepositoryAwareInterface
 	/**
 	 * @param $type
 	 *
-	 * @return DataType[string]|null
+	 * @return DataTypeDefinition[string]|null
 	 */
 	public function getPropertyType($type): ?DataTypeDefinition
 	{
@@ -136,14 +136,10 @@ class DictionaryService implements RepositoryAwareInterface
 //		}
 //	}
 
-
-
 //	public function addAssociation($associationDef)
 //	{
 //		$this->associations->set($associationDef->getQName(), $associationDef);
 //	}
-
-
 
 //	public function setAssociation(NodeAssociationDef $def)
 //	{

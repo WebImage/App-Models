@@ -4,6 +4,7 @@ namespace WebImage\Models\Helpers;
 
 use WebImage\Config\Config;
 use WebImage\Core\Dictionary;
+use WebImage\Models\Defs\ModelDefinition;
 use WebImage\Models\Properties\YamlPropertyTypeImporter;
 
 class DictionaryPropertyTypeHelper
@@ -18,7 +19,8 @@ class DictionaryPropertyTypeHelper
 		return self::loadByType($types);
 	}
 
-	private static function loadByType($types) {
+	private static function loadByType($types): array
+	{
 		if (is_string($types)) return self::loadFromFile($types);
 		else if (is_iterable($types)) return self::loadFromArray($types);
 
@@ -27,9 +29,9 @@ class DictionaryPropertyTypeHelper
 
 	/**
 	 * @param string $typeFile
-	 * @return array|\WebImage\Models\Defs\ModelDefinition[]
+	 * @return array|ModelDefinition[]
 	 */
-	private static function loadFromFile(string $typesFile)
+	private static function loadFromFile(string $typesFile): array
 	{
 		$parser = new YamlPropertyTypeImporter();
 

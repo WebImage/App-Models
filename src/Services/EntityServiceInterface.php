@@ -17,15 +17,19 @@ interface EntityServiceInterface extends RepositoryAwareInterface
 	public function get(): Entity;
 
 	/**
-	 * @param string $model
+	 * @param string $modelName
 	 * @return Entity
 	 * @throws InvalidModelException
 	 */
-	public function create(string $model): Entity;
-	public function createReference(string $type): EntityReference;
+	public function create(string $modelName): Entity;
+	public function createReference(string $modelName): EntityReference;
 	public function save(Entity $entity): Entity;
 	public function delete(Entity $entity): bool;
-	/** @return Entity[] */
+
+	/**
+	 * @param Query $query
+	 * @return Collection
+	 */
 	public function query(Query $query): Collection; //Entity[]
 	public function createQueryBuilder(): QueryBuilder;
 	#public function createAssociation($);

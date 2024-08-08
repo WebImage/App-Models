@@ -23,7 +23,7 @@ use WebImage\Models\Compiler\YamlModelCompiler;
 
 class RepositoryServiceProvider extends AbstractServiceProvider
 {
-	protected $provides = [
+	protected array $provides = [
 		RepositoryInterface::class,
 		EntityServiceInterface::class,
 		ModelServiceInterface::class,
@@ -70,16 +70,16 @@ class RepositoryServiceProvider extends AbstractServiceProvider
 		 * Add models to dictionary
 		 */
 		$modelFiles = $config->get('models');
-		if ($modelFiles !== null && !is_array($modelFiles)) {
+		if ($modelFiles === null) {
+			throw new \RuntimeException('Config at webimage/models.models must contain an array of model files to include');
+		} else if ($modelFiles !== null && !is_array($modelFiles)) {
 			throw new \RuntimeException('Config at webimage/models.models must be an array');
 		}
-
-		$modelFiles = is_array($modelFiles) ? $modelFiles : [$modelFiles];
 
 		foreach($modelFiles as $modelFile) {
 			$models = DictionaryTypeHelper::load($modelFile);
 			foreach($models as $model) {
-				$dict->addModel($model);
+				$dict->addModelDefinition($model);
 			}
 		}
 

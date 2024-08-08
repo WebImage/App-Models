@@ -2,6 +2,7 @@
 
 namespace WebImage\Models\Compiler;
 
+use Exception;
 use WebImage\Core\ArrayHelper;
 use WebImage\Models\Defs\PropertyPathDefinition;
 use WebImage\Models\Defs\PropertyReferenceDefinition;
@@ -53,7 +54,7 @@ class ModelCompiler
 	 *
 	 * @param ModelDefinition $modelDef
 	 * @param array $struct
-	 * @throws \Exception
+	 * @throws Exception
 	 */
 	private function addProperties(ModelDefinition $modelDef, array $struct)
 	{
@@ -63,7 +64,7 @@ class ModelCompiler
 		$defaultPrimaryKey = 'id';
 
 		foreach($struct['properties'] as $name => $propertyInfo) {
-			list($name, $propertyInfo) = $this->normalizePropertyInfo($name, $propertyInfo);
+			list($name, $propertyInfo) = $this->normalizePropertyInfo($modelDef, $name, $propertyInfo);
 
 			$propertyInfo['name'] = $name;
 
@@ -161,12 +162,12 @@ class ModelCompiler
 	 * @param string $name
 	 * @param $propertyInfo
 	 * @return array
-	 * @throws \Exception
+	 * @throws Exception
 	 */
-	private function normalizePropertyInfo(string $name, /* mixed */ $propertyInfo)
+	private function normalizePropertyInfo(ModelDefinition $modelDef, string $name, /* mixed */ $propertyInfo)
 	{
 		if (is_string($propertyInfo)) $propertyInfo = $this->createPropertyInfoFromString($name, $propertyInfo);
-		else if ($propertyInfo === null) throw new \InvalidArgumentException('Normalizing property info for ' . $name . '.  Cannot be NULL');
+		else if ($propertyInfo === null) throw new \InvalidArgumentException('Normalizing property info for ' . $modelDef->getName() . '.' . $name . '.  Cannot be NULL');
 
 		$defaults = [
 			'type' => null,
@@ -179,7 +180,7 @@ class ModelCompiler
 		if (substr($name, 0, 1) == '@') {
 			$name = substr($name, 1);
 			if (array_key_exists('primaryKey', $propertyInfo) && $propertyInfo['primaryKey'] !== null) {
-				throw new \Exception($name . ' should not have a primaryKey property if name uses the @ property name prefix, which already indicates a primary key');
+				throw new Exception($name . ' should not have a primaryKey property if name uses the @ property name prefix, which already indicates a primary key');
 			}
 			$propertyInfo['primaryKey'] = true;
 		}
@@ -243,8 +244,8 @@ class ModelCompiler
 
 		try {
 			$parsed = $parser->parse($property);
-		} catch (\Exception $e) {
-			throw new \Exception('Failed to parse ' . $propertyName . ': ' . $property . ': ' . $e->getMessage());
+		} catch (Exception $e) {
+			throw new Exception('Failed to parse ' . $propertyName . ': ' . $property . ': ' . $e->getMessage());
 		}
 
 		return $parsed;

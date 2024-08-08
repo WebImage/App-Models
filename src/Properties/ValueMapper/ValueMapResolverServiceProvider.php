@@ -6,7 +6,7 @@ use WebImage\Container\ServiceProvider\AbstractServiceProvider;
 
 class ValueMapResolverServiceProvider extends AbstractServiceProvider
 {
-	protected $provides = [
+	protected array $provides = [
 		ValueMapResolver::class
 	];
 

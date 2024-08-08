@@ -45,7 +45,7 @@ abstract class AbstractEntityService implements EntityServiceInterface
 	}
 
 
-	protected function populateDefaultPropertyValues(Model $model, EntityStub $entity)
+	protected function populateDefaultPropertyValues(Model $model, EntityStub $entity): EntityStub
 	{
 		foreach($model->getDef()->getProperties() as $propertyDef) {
 

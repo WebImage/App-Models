@@ -11,7 +11,7 @@ use WebImage\Application\ApplicationInterface;
 use WebImage\Application\HttpApplication;
 
 class Plugin extends AbstractPlugin {
-	public function load(ApplicationInterface $app)
+	public function load(ApplicationInterface $app): void
 	{
 		parent::load($app);
 		$this->loadServiceProviders($app);

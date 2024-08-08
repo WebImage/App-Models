@@ -287,7 +287,7 @@ class DoctrineTableCreator
 		/**
 		 * Check for references from other types to this type and create any additional reference columns necessary
 		 */
-		foreach ($dictionaryService->getModels() as $otherModelDef) {
+		foreach ($dictionaryService->getModelDefinitions() as $otherModelDef) {
 			if ($otherModelDef->getPluralName() == $typeDef->getPluralName()) continue;
 
 			foreach ($otherModelDef->getProperties() as $otherModelPropDef) {

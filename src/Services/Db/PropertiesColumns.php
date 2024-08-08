@@ -33,6 +33,7 @@ class PropertiesColumns
 	 */
 	public function getPropertyColumns(string $property): ModelPropertyTableColumns
 	{
+		if (!$this->properties->has($property)) die('Missing Property: ' . $property . PHP_EOL);
 		return $this->properties->get($property);
 	}
 

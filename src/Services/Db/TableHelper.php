@@ -37,6 +37,10 @@ class TableHelper
 		$propertiesColumns = new PropertiesColumns();
 		$tableName         = TableNameHelper::getTableNameFromDef($modelDef);
 
+		if ($propDef === null) {
+			throw new \RuntimeException('Unknown property ' . $modelDef->getName() . '.' . $property);
+		}
+
 		if ($propDef->isVirtual()) {
 			$reference     = $propDef->getReference();
 

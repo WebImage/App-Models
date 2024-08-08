@@ -82,7 +82,7 @@ class QueryBuilder
 			throw new Exception('From must be set first');
 		}
 
-		$primaryKeys = $this->entityService->getRepository()->getDictionaryService()->getModel($this->query->getFrom())->getPrimaryKeys()->keys();
+		$primaryKeys = $this->entityService->getRepository()->getDictionaryService()->getModelDefinition($this->query->getFrom())->getPrimaryKeys()->keys();
 
 		if (is_string($id) || is_numeric($id)) {
 			if (count($primaryKeys) != 1) {
@@ -121,7 +121,7 @@ class QueryBuilder
 
 		$this->assertEntities($entities, $this->query->getFrom());
 
-		$primaryKeys = $this->entityService->getRepository()->getDictionaryService()->getModel($this->query->getFrom())->getPrimaryKeys()->keys();
+		$primaryKeys = $this->entityService->getRepository()->getDictionaryService()->getModelDefinition($this->query->getFrom())->getPrimaryKeys()->keys();
 
 		$this->buildWhere(function(FilterBuilder $builder) use ($entities, $primaryKeys) {
 //			$and = $builder->and(function())
