@@ -10,39 +10,46 @@ class Query
 	/**
 	 * @var string
 	 */
-	private $from;
+	private string $from;
 	/**
 	 * @var array
 	 */
-	private $properties = [];
+	private array $properties = [];
 	/**
 	 * @var Property[]
 	 */
-	private $joinProperties = [];
+	private array $joinProperties = [];
 	/**
 	 * @var CompositeFilter[]
 	 */
-	private $compositeFilters = [];
+	private array $compositeFilters = [];
 	/**
 	 * @var array
 	 */
-	private $sorts = [];
+	private array $sorts = [];
 	/**
 	 * @var array
 	 */
-	private $filterAssociationValues = [];
-	/**
-	 * @var string[]
-	 */
+	private array $filterAssociationValues = [];
+//	/**
+//	 * @var string[]
+//	 */
 //	private $keywords = [];
 	/**
 	 * @var int|null
 	 */
-	private $offset;
+	private ?int $offset;
 	/**
-	 * @var int
+	 * @var ?int
 	 */
-	private $limit;
+	private ?int $limit;
+
+	public function __construct()
+	{
+		$this->offset = null;
+		$this->limit = null;
+	}
+
 
 	/**
 	 * @return string
@@ -133,7 +140,7 @@ class Query
 	 *
 	 * @return int|null
 	 */
-	public function getOffset()
+	public function getOffset(): ?int
 	{
 		return $this->offset;
 	}
@@ -141,9 +148,9 @@ class Query
 	/**
 	 * Get the max results to retrieve at a time
 	 *
-	 * @return int
+	 * @return ?int
 	 */
-	public function getLimit()
+	public function getLimit(): ?int
 	{
 		return $this->limit;
 	}
@@ -153,7 +160,7 @@ class Query
 	 *
 	 * @param int $offset
 	 */
-	public function setOffset($offset)
+	public function setOffset(?int $offset)
 	{
 		$this->offset = $offset;
 	}
@@ -161,9 +168,9 @@ class Query
 	/**
 	 * Set the results per page
 	 *
-	 * @param int $limit
+	 * @param ?int $limit
 	 */
-	public function setLimit($limit)
+	public function setLimit(?int $limit)
 	{
 		$this->limit = $limit;
 	}

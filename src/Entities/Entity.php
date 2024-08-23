@@ -192,6 +192,12 @@ class Entity extends EntityStub implements RepositoryAwareInterface
 		$this->isNew = $isNew;
 	}
 
+	/**
+	 * @param string $name
+	 * @param mixed $value
+	 * @return void
+	 * @throws \Exception
+	 */
 	public function setPropertyValue(string $name, $value): void
 	{
 		$propDef = $this->getProperty($name)->getDef();

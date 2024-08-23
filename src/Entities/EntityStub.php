@@ -13,7 +13,7 @@ class EntityStub implements \ArrayAccess
 	/**
 	 * @var string
 	 */
-	private $model;
+	private string $model;
 	/**
 	 * @var Dictionary
 	 */
@@ -21,7 +21,7 @@ class EntityStub implements \ArrayAccess
 	/**
 	 * @var bool
 	 */
-	private $isChanged = false;
+	private bool $isChanged = false;
 
 	/**
 	 * Node constructor.
@@ -36,7 +36,7 @@ class EntityStub implements \ArrayAccess
 	/**
 	 * Get the properties associated with the node
 	 *
-	 * @return PropertyInterface[]|SingleValuePropertyInterface[]|MultiValuePropertyInterface[]
+	 * @return Dictionary|PropertyInterface[]|SingleValuePropertyInterface[]|MultiValuePropertyInterface[]
 	 */
 	public function getProperties(): Dictionary
 	{
@@ -57,7 +57,7 @@ class EntityStub implements \ArrayAccess
 	/**
 	 * Get the value for a given property
 	 *
-	 * @param $name
+	 * @param string $name
 	 * @return mixed
 	 */
 	private function rawPropertyValue(string $name)
@@ -92,7 +92,6 @@ class EntityStub implements \ArrayAccess
 	 */
 	public function getPropertyValue(string $name)
 	{
-
 		$property = $this->getProperty($name);
 		if ($property === null) return null;
 
@@ -123,7 +122,7 @@ class EntityStub implements \ArrayAccess
 	 * @param string $name
 	 * @param PropertyInterface $property
 	 */
-	public function addProperty($name, PropertyInterface $property): void
+	public function addProperty(string $name, PropertyInterface $property): void
 	{
 		$this->properties[$name] = $property;
 	}
@@ -144,7 +143,7 @@ class EntityStub implements \ArrayAccess
 	 * Set the property value
 	 *
 	 * @param string $name
-	 * @param string $value
+	 * @param mixed $value
 	 */
 	public function setPropertyValue(string $name, $value): void
 	{
@@ -167,7 +166,7 @@ class EntityStub implements \ArrayAccess
 	 *
 	 * @param string $model
 	 */
-	public function setModel($model): void
+	public function setModel(string $model): void
 	{
 		$this->model = $model;
 	}
@@ -201,7 +200,7 @@ class EntityStub implements \ArrayAccess
 		}
 	}
 
-	public function offsetExists($offset)
+	public function offsetExists($offset): bool
 	{
 		return $this->getProperty($offset) !== null;
 	}

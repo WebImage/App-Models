@@ -157,7 +157,6 @@ class ResultHelper
 
 		if ($propDef->getModel() !== 'degree' || $propDef->getName() !== 'type') return;
 
-		echo 'refModelName: ' . $refModelName . '(' . $propDef->getModel() . '.' . $propDef->getName() . ')<br>';
 		$propTableAlias       = TableNameHelper::getColumnNameAlias($propDef->getName(), $refModelName);
 
 		foreach (TableHelper::getPropertiesColumns($modelService, $refModel->getDef())->getProperties() as $propertiesColumn) {
@@ -165,7 +164,7 @@ class ResultHelper
 				$columnName  = TableNameHelper::getColumnName($propTableAlias, $column->getName(), $column->getDataTypeField()->getKey());
 				$columnAlias = TableNameHelper::getColumnNameAlias($propTableAlias, $column->getName(), $column->getDataTypeField()->getKey());
 				#$qb->addSelect(sprintf('%s AS %s', $columnName, $columnAlias));
-				echo $columnName . ' --- ' . $columnAlias . '<br>';
+//				echo $columnName . ' --- ' . $columnAlias . '<br>';
 			}
 		}
 		die(__FILE__ . ':' . __LINE__ . PHP_EOL);
