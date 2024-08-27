@@ -25,45 +25,42 @@ class ImportModelsCommand extends AbstractCommand
 		$this->setName('models:import')
 			->setDescription('Imports models from configured \'webimage/models\' config key')
 			->setHelp('Import models from YAML files');
-		$this->addOption('watch', 'w', InputOption::VALUE_NONE, 'Watch the types file for updates and automatically import new types');
+//		$this->addOption('watch', 'w', InputOption::VALUE_NONE, 'Watch the types file for updates and automatically import new types');
 		$this->addOption('limit-model', 'm', InputOption::VALUE_REQUIRED, 'Limit the model(s) to be dumped.  Specify multiple models comma delimited');
 		$this->addOption('debug', 'd', InputOption::VALUE_NONE, 'Dumps the structure of an import without importing any actual values');
 	}
 
 	protected function execute(InputInterface $input, OutputInterface $output)
 	{
-		if (($modelsFile = $this->getModelsFile($output)) === null) return 0;
-
-		if ($input->getOption('watch')) {
-			$this->watch($input, $output, $modelsFile);
-		} else {
-			$this->importModels($input, $output, $modelsFile);
-		}
+//		if ($input->getOption('watch')) {
+//			$this->watch($input, $output, $modelsFile);
+//		} else {
+			$this->importModels($input, $output);
+//		}
 
 		return 0;
 	}
 
-	protected function watch(InputInterface $input, OutputInterface $output, string $modelsFile)
+//	protected function watch(InputInterface $input, OutputInterface $output, array $modelsFile)
+//	{
+//		$lastUpdated = null;
+//
+//		while (true) {
+//			clearstatcache();
+//			$modified = filemtime($modelsFile);
+//			if ($lastUpdated === null || $lastUpdated != $modified) {
+//				$this->importModels($input, $output, $modelsFile);
+//				$lastUpdated = $modified;
+//			}
+//			sleep(1);
+//		}
+//	}
+
+	private function importModels(InputInterface $input, OutputInterface $output)
 	{
-		$lastUpdated = null;
-
-		while (true) {
-			clearstatcache();
-			$modified = filemtime($modelsFile);
-			if ($lastUpdated === null || $lastUpdated != $modified) {
-				$this->importModels($input, $output, $modelsFile);
-				$lastUpdated = $modified;
-			}
-			sleep(1);
-		}
-	}
-
-	private function importModels(InputInterface $input, OutputInterface $output, string $modelsFile)
-	{
-		if (($modelDefs = $this->getModels($modelsFile, $output)) === null) return;
-
 		/** @var RepositoryInterface $repo */
 		$repo = $this->getContainer()->get(RepositoryInterface::class);
+		$modelDefs = $repo->getDictionaryService()->getModelDefinitions();
 
 		$saveModels = [];
 
@@ -181,22 +178,26 @@ class ImportModelsCommand extends AbstractCommand
 		return $importer->compileFile($modelsFile);
 	}
 
-	private function getModelsFile(OutputInterface $output): ?string
-	{
-		$config = $this->getApp()->getConfig()->get('webimage/models');
-		if (null === $config) {
-			$output->writeln('Missing \'webimage/models\' config key');
-			return null;
-		}
-
-		$modelsFile = $config->get('models');
-		if (null === $modelsFile) {
-			$output->writeln('Missing "models" key from \'webimage/models\' config');
-			return null;
-		}
-
-		return $modelsFile;
-	}
+//	private function getModelsFile(OutputInterface $output): ?string
+//	{
+//		$config = $this->getApp()->getConfig()->get('webimage/models');
+//		if (null === $config) {
+//			$output->writeln('Missing \'webimage/models\' config key');
+//			return null;
+//		}
+//
+//		$modelsFile = $config->get('models');
+//		if (null === $modelsFile) {
+//			$output->writeln('Missing "models" key from \'webimage/models\' config');
+//			return null;
+//		} else if (!is_iterable($modelsFile)) {
+//			$output->writeln('\'models\' key from \'webimage/models\' config must be an array');
+//			return null;
+//		}
+//		echo '<pre>';print_r($modelsFile); die(__FILE__ . ':' . __LINE__ . PHP_EOL);
+//
+//		return $modelsFile;
+//	}
 
 	protected function getApp(): ApplicationInterface
 	{
