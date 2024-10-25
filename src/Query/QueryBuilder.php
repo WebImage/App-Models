@@ -2,6 +2,7 @@
 
 namespace WebImage\Models\Query;
 
+use Exception;
 use WebImage\Core\Collection;
 use WebImage\Core\Dictionary;
 use WebImage\Models\Entities\Entity;

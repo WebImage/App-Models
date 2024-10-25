@@ -10,7 +10,7 @@ class YamlModelCompiler extends ModelCompiler
 {
 	/**
 	 * @param $file
-	 * @return ModelDefinition[]|array
+	 * @return ModelDefinition[]
 	 */
 	public function compileFile($file): array
 	{

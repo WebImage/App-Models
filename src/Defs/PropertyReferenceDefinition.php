@@ -31,6 +31,14 @@ class PropertyReferenceDefinition
 	}
 
 	/**
+	 * @param string $targetModel
+	 */
+	public function setTargetModel(string $targetModel): void
+	{
+		$this->targetModel = $targetModel;
+	}
+
+	/**
 	 * @return string
 	 */
 	public function getReverseProperty(): ?string
@@ -39,7 +47,7 @@ class PropertyReferenceDefinition
 	}
 
 	/**
-	 * @param string $reverseProperty
+	 * @param string|null $reverseProperty
 	 */
 	public function setReverseProperty(?string $reverseProperty): void
 	{

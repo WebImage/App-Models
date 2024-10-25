@@ -159,12 +159,13 @@ class ModelCompiler
 
 	/**
 	 * Ensure that propertyInfo has base set of default values
+	 * @param ModelDefinition $modelDef
 	 * @param string $name
 	 * @param $propertyInfo
 	 * @return array
 	 * @throws Exception
 	 */
-	private function normalizePropertyInfo(ModelDefinition $modelDef, string $name, /* mixed */ $propertyInfo)
+	private function normalizePropertyInfo(ModelDefinition $modelDef, string $name, /* mixed */ $propertyInfo): array
 	{
 		if (is_string($propertyInfo)) $propertyInfo = $this->createPropertyInfoFromString($name, $propertyInfo);
 		else if ($propertyInfo === null) throw new \InvalidArgumentException('Normalizing property info for ' . $modelDef->getName() . '.' . $name . '.  Cannot be NULL');
@@ -211,7 +212,7 @@ class ModelCompiler
 		$propDef->setReference($propertyReference);
 	}
 
-	private function normalizePropertyReferenceType(/* mixed */ $data=array(), string $name, array $propertyInfo)
+	private function normalizePropertyReferenceType(/* mixed */ $data, string $name, array $propertyInfo)
 	{
 		$defaults = [
 			'targetType' => null,
@@ -238,7 +239,7 @@ class ModelCompiler
 		return $data;
 	}
 
-	private function createPropertyInfoFromString(string $propertyName, string $property)
+	private function createPropertyInfoFromString(string $propertyName, string $property): array
 	{
 		$parser = new PropertyDefinitionParser();
 

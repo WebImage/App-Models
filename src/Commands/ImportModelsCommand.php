@@ -162,43 +162,6 @@ class ImportModelsCommand extends AbstractCommand
 		return (string) PropertyReferenceHelper::getAssociationCardinality($modelService, $propDef);
 	}
 
-	#private function fetchReversePropertyRelationship($modelService, )
-
-	#private function hasReverseRelationship(ModelServiceInterface $typeService, PropertyDefinition)
-
-	/**
-	 * @param string $modelsFile
-	 * @param OutputInterface $output
-	 * @return ModelDefinition[]
-	 */
-	private function getModels(string $modelsFile): array
-	{
-		$importer = new YamlModelCompiler();
-
-		return $importer->compileFile($modelsFile);
-	}
-
-//	private function getModelsFile(OutputInterface $output): ?string
-//	{
-//		$config = $this->getApp()->getConfig()->get('webimage/models');
-//		if (null === $config) {
-//			$output->writeln('Missing \'webimage/models\' config key');
-//			return null;
-//		}
-//
-//		$modelsFile = $config->get('models');
-//		if (null === $modelsFile) {
-//			$output->writeln('Missing "models" key from \'webimage/models\' config');
-//			return null;
-//		} else if (!is_iterable($modelsFile)) {
-//			$output->writeln('\'models\' key from \'webimage/models\' config must be an array');
-//			return null;
-//		}
-//		echo '<pre>';print_r($modelsFile); die(__FILE__ . ':' . __LINE__ . PHP_EOL);
-//
-//		return $modelsFile;
-//	}
-
 	protected function getApp(): ApplicationInterface
 	{
 		return $this->getContainer()->get(ApplicationInterface::class);

@@ -11,7 +11,7 @@ use WebImage\Models\Entities\EntityStub;
 /**
  * @template T
  */
-abstract class ModelEntity
+abstract class ModelEntity implements ModelEntityInterface
 {
 	protected EntityStub $entity;
 
@@ -20,7 +20,7 @@ abstract class ModelEntity
 		$this->entity = $entity;
 	}
 
-	public function getEntity(): Entity
+	public function getEntity(): EntityStub
 	{
 		return $this->entity;
 	}

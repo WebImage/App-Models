@@ -76,8 +76,9 @@ class RepositoryServiceProvider extends AbstractServiceProvider
 			throw new \RuntimeException('Config at webimage/models.models must be an array');
 		}
 
+		$vars = $config->get('variables');
 		foreach($modelFiles as $modelFile) {
-			$models = DictionaryTypeHelper::load($modelFile);
+			$models = DictionaryTypeHelper::load($modelFile, $vars);
 			foreach($models as $model) {
 				$dict->addModelDefinition($model);
 			}
