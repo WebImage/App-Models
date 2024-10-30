@@ -4,11 +4,15 @@ declare(strict_types=1);
 namespace WebImage\Models\Services\Db;
 
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Exception as DBALException;
 use Doctrine\DBAL\Schema\AbstractSchemaManager;
 use Doctrine\DBAL\Schema\Comparator;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\DBAL\Schema\SchemaDiff;
+use Doctrine\DBAL\Schema\SchemaException;
 use Doctrine\DBAL\Schema\Table;
+use Exception;
+use RuntimeException;
 use WebImage\Models\Defs\PropertyDefinition;
 use WebImage\Models\Defs\PropertyReferenceDefinition;
 use WebImage\Models\Defs\ModelDefinition;
@@ -38,8 +42,8 @@ class DoctrineTableCreator
 	 *
 	 * @param ModelDefinition[] $typeDefs
 	 * @return SchemaDiff
-	 * @throws \Doctrine\DBAL\Exception
-	 * @throws \Doctrine\DBAL\Schema\SchemaException
+	 * @throws DBALException
+	 * @throws SchemaException
 	 */
 	public function diffModels(array $typeDefs): SchemaDiff
 	{
@@ -66,8 +70,8 @@ class DoctrineTableCreator
 
 	/**
 	 * @param array|ModelDefinition[] $models
-	 * @throws \Doctrine\DBAL\Exception
-	 * @throws \Doctrine\DBAL\Schema\SchemaException
+	 * @throws DBALException
+	 * @throws SchemaException
 	 */
 	public function importModels(array $models): void
 	{
@@ -95,7 +99,7 @@ class DoctrineTableCreator
 	 *
 	 * @param ModelDefinition $modelDef
 	 * @param Table $table
-	 * @throws \Doctrine\DBAL\Schema\SchemaException
+	 * @throws SchemaException
 	 */
 	private function createTableColumns(ModelDefinition $modelDef, Table $table)
 	{
@@ -142,7 +146,7 @@ class DoctrineTableCreator
 			} else if ($dataTypeField->getType() == 'string') {
 				$options['length'] = $propDef->getSize();
 			} else {
-				throw new \RuntimeException('Unhandled data type ' . $dataTypeField->getType() . ' with size');
+				throw new RuntimeException('Unhandled data type ' . $dataTypeField->getType() . ' with size');
 			}
 		}
 
@@ -154,7 +158,7 @@ class DoctrineTableCreator
 	 *
 	 * @param ModelDefinition $modelDef
 	 * @param Schema $schema
-	 * @throws \Doctrine\DBAL\Schema\SchemaException
+	 * @throws SchemaException
 	 */
 	private function createMultiValueProperties(ModelDefinition $modelDef, Schema $schema)
 	{
@@ -212,6 +216,7 @@ class DoctrineTableCreator
 	 * @param ModelDefinition $modelDef
 	 * @param Table $table
 	 * @param Schema $newSchema
+	 * @throws Exception
 	 */
 	private function createTableAssociations(ModelDefinition $modelDef, Table $table, Schema $newSchema)
 	{
@@ -224,7 +229,7 @@ class DoctrineTableCreator
 			$cardinality = PropertyReferenceHelper::getAssociationCardinality($this->modelService, $propDef);
 
 			if ($otherModel === null) {
-				throw new \Exception($propDef->getModel() . '.' . $propDef->getName() . ' references ' . $reference->getTargetModel() . ', but ' . $reference->getTargetModel() . ' does not exist');
+				throw new Exception($propDef->getModel() . '.' . $propDef->getName() . ' references ' . $reference->getTargetModel() . ', but ' . $reference->getTargetModel() . ' does not exist');
 			}
 
 			$handled = $cardinality->isOneToOne() || $cardinality->isManyToMany() || $cardinality->isOneToMany();
@@ -238,18 +243,22 @@ class DoctrineTableCreator
 			// @TODO should a JOIN table be created to handle this on some occasions?
 			} else if ($cardinality->isManyToOne()) {
 				if ($reference->getReverseProperty() === null) { // When "reverse property" is set then that model will setup the required association table
-					throw new \Exception($cardinality . ' is not implemented');
+					throw new Exception($cardinality . ' is not implemented');
 				}
 			} else if ($cardinality->isManyToMany()) {
 				$this->createAssociationTable($propDef, $newSchema);
 			} else {
-				throw new \Exception('Unhandled cardinality ' . $cardinality . ' on ' . $propDef->getModel() . '.' . $propDef->getName() . ' -> ' . $reference->getTargetModel() . ($reference->getReverseProperty() === null ? '' : '.' . $reference->getReverseProperty()));
+				throw new Exception('Unhandled cardinality ' . $cardinality . ' on ' . $propDef->getModel() . '.' . $propDef->getName() . ' -> ' . $reference->getTargetModel() . ($reference->getReverseProperty() === null ? '' : '.' . $reference->getReverseProperty()));
 			}
 		}
 //		echo $modelDef->getName() . '.createReverse' . PHP_EOL;
 //		$this->createReversePropertyReferences($modelDef, $table, $newSchema);
 	}
 
+	/**
+	 * @throws SchemaException
+	 * @throws Exception
+	 */
 	private function createOneToOneProperty(Table $table, ModelDefinitionInterface $modelDef, PropertyDefinition $propDef)
 	{
 		$modelService  = $this->modelService;
@@ -269,7 +278,7 @@ class DoctrineTableCreator
 			}
 
 		} else {
-			throw new \Exception('Unhandled 1:1 with reverse property on ' . $propDef->getModel() . '.' . $propDef->getName() . ' -> ' . $reference->getTargetModel() . '.' . $reference->getReverseProperty());
+			throw new Exception('Unhandled 1:1 with reverse property on ' . $propDef->getModel() . '.' . $propDef->getName() . ' -> ' . $reference->getTargetModel() . '.' . $reference->getReverseProperty());
 		}
 	}
 
@@ -279,6 +288,8 @@ class DoctrineTableCreator
 	 * @param ModelDefinition $typeDef
 	 * @param Table $table
 	 * @param Schema $newSchema
+	 * @throws SchemaException
+	 * @throws Exception
 	 */
 	private function createReversePropertyReferences(ModelDefinition $typeDef, Table $table, Schema $newSchema)
 	{
@@ -298,7 +309,7 @@ class DoctrineTableCreator
 				if ($cardinality->isOneToOne() || $cardinality->isManyToMany()) {
 					continue;
 				} else if ($cardinality->isManyToOne()) {
-					throw new \Exception($otherModelPropDef->getModel() . '.' . $otherModelPropDef . ' has unsupported cardinality: ' . $cardinality);
+					throw new Exception($otherModelPropDef->getModel() . '.' . $otherModelPropDef . ' has unsupported cardinality: ' . $cardinality);
 				}
 
 				$this->createPropertyAssociationTable($otherModelDef, $otherModelPropDef, $typeDef, $newSchema);
@@ -306,16 +317,19 @@ class DoctrineTableCreator
 		}
 	}
 
+	/**
+	 * @throws SchemaException
+	 * @throws Exception
+	 */
 	private function createPropertyAssociationTable(ModelDefinition $modelDef, PropertyDefinition $propDef, ModelDefinition $targetModelDef, Schema $newSchema)
 	{
-		$tableName     = TableNameHelper::getTableNameFromDef($modelDef, $propDef->getName());
+		$propertyTableName     = TableNameHelper::getTableNameFromDef($modelDef, $propDef->getName());
 		$sourcePropertyColumns = TableHelper::getPrimaryKeyColumns($this->modelService, $modelDef);
-
 		$targetPropertyColumns = TableHelper::getPrimaryKeyColumns($this->modelService, $targetModelDef);
 
-		if ($newSchema->hasTable($tableName)) return;
+		if ($newSchema->hasTable($propertyTableName)) return;
 
-		$propTable = $newSchema->createTable($tableName);
+		$propTable = $newSchema->createTable($propertyTableName);
 
 		$targetTableColumns = [$sourcePropertyColumns->getColumns(), $targetPropertyColumns->getColumns()];
 
@@ -336,7 +350,7 @@ class DoctrineTableCreator
 				$foreignColumnNames[] = $column->getName();
 			}
 
-			$foreignKeyName = sprintf('fk_%s_%s', $tableName, $foreignTable);
+			$foreignKeyName = sprintf('fk_%s_%s', $propertyTableName, $foreignTable);
 			$propTable->addForeignKeyConstraint($foreignTable, $localColumnNames, $foreignColumnNames);
 		}
 	}
@@ -345,7 +359,7 @@ class DoctrineTableCreator
 	 * Create table that can are used to join multiple tables
 	 * @param PropertyDefinition $propDef
 	 * @param Schema $newSchema
-	 * @throws \Doctrine\DBAL\Schema\SchemaException
+	 * @throws SchemaException
 	 */
 	private function createAssociationTable(PropertyDefinition $propDef, Schema $newSchema)
 	{
@@ -405,6 +419,7 @@ class DoctrineTableCreator
 	 *
 	 * @param ModelDefinition $modelDef
 	 * @return array
+	 * @throws Exception
 	 */
 	private function getTablePrimaryKeys(ModelDefinition $modelDef)
 	{
@@ -415,7 +430,7 @@ class DoctrineTableCreator
 			$propertyDef = $modelDef->getProperty($primaryKey);
 
 			if ($propertyDef === null) {
-				throw new \Exception($modelDef->getPluralName() . ' does not have a primary key property named ' . $primaryKey);
+				throw new Exception($modelDef->getPluralName() . ' does not have a primary key property named ' . $primaryKey);
 			}
 
 			if ($propertyDef->isVirtual() && $propertyDef->getReference() !== null) {

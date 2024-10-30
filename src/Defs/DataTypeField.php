@@ -14,7 +14,7 @@ class DataTypeField {
 	/** @var string */
 	private $name;
 	/** @var Dictionary */
-	private $options;
+	private Dictionary $options;
 
 	/**
 	 * DataTypeModelField constructor.
@@ -41,6 +41,7 @@ class DataTypeField {
 	}
 
 	/**
+	 * An internal key to be used for generating classes and storage structures
 	 * @return string|null
 	 */
 	public function getKey(): ?string
@@ -49,6 +50,7 @@ class DataTypeField {
 	}
 
 	/**
+	 * A user friendly name
 	 * @return string|null
 	 */
 	public function getName(): ?string

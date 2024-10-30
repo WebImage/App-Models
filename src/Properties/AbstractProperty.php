@@ -10,7 +10,7 @@ abstract class AbstractProperty implements PropertyInterface
 	/**
 	 * @var PropertyDefinition
 	 */
-	private $def;
+	private PropertyDefinition $def;
 
 	public function __construct()
 	{

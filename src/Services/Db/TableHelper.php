@@ -90,11 +90,17 @@ class TableHelper
 		return $propertiesColumns;
 	}
 
+	/**
+	 * @throws \Exception
+	 */
 	public static function getPropertyColumns(ModelServiceInterface $modelService, ModelDefinitionInterface $modelDef, string $property): ModelPropertyTableColumns
 	{
 		return self::getPropertiesColumns($modelService, $modelDef, $property)->getPropertyColumns($property);
 	}
 
+	/**
+	 * @throws \Exception
+	 */
 	public static function getModelColumns(ModelServiceInterface $modelService, ModelDefinitionInterface $modelDef): PropertiesColumns
 	{
 		$propertiesColumns= new PropertiesColumns();

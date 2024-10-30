@@ -103,7 +103,7 @@ class DictionaryService implements RepositoryAwareInterface
 	}
 
 	/**
-	 * @return Dictionary<string, DataType> A dictionary of defined data types
+	 * @return array<string, DataTypeDefinition> A dictionary of defined data types
 	 */
 	public function getPropertyTypes(): array
 	{

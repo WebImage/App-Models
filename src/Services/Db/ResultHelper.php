@@ -2,6 +2,7 @@
 
 namespace WebImage\Models\Services\Db;
 
+use Exception;
 use WebImage\Models\Defs\PropertyDefinition;
 use WebImage\Models\Helpers\PropertyReferenceHelper;
 use WebImage\Models\Properties\MultiValueProperty;
@@ -34,7 +35,7 @@ class ResultHelper
 	 * @param PropertyDefinition $propDef
 	 * @param array $data A single result
 	 * @return PropertyInterface
-	 * @throws UnsupportedMultiValueProperty
+	 * @throws UnsupportedMultiColumnKeys
 	 */
 	public function createPropertyFromData(string $modelTableKey, PropertyDefinition $propDef, array $data): PropertyInterface
 	{
@@ -53,6 +54,10 @@ class ResultHelper
 		return $property;
 	}
 
+	/**
+	 * @throws UnsupportedMultiColumnKeys
+	 * @throws Exception
+	 */
 	private function createSingleValuePropertyFromData(string $modelTableKey, PropertyDefinition $propDef, array $data): Property
 	{
 		$property = new Property();

@@ -2,8 +2,11 @@
 
 namespace WebImage\Models\Entities;
 
+use Exception;
+use WebImage\Core\ArrayHelper;
 use WebImage\Models\Defs\PropertyDefinition;
-use WebImage\Models\Properties\InvalidPropertyException;
+use WebImage\Models\Exceptions\InvalidPropertyException;
+use WebImage\Models\Services\ModelEntity;
 use WebImage\Models\Services\RepositoryAwareInterface;
 use WebImage\Models\Services\RepositoryAwareTrait;
 use WebImage\Models\Services\RepositoryInterface;
@@ -11,20 +14,17 @@ use WebImage\Models\Services\RepositoryInterface;
 class Entity extends EntityStub implements RepositoryAwareInterface
 {
 	use RepositoryAwareTrait;
-	/** @var bool */
-	private $isNew = true;
-	/**
-	 * @var EntityRefInterface
-	 */
-	private $entityRef;
+
+	private bool                $isNew     = true;
+	private ?EntityRefInterface $entityRef = null;
 	/**
 	 * @var array
 	 */
-	private $associations = [];
+	private array $associations = [];
 	/**
 	 * @var array
 	 */
-	private $extensions = [];
+	private array $extensions = [];
 
 	public function __construct(string $model, RepositoryInterface $repo)
 	{
@@ -35,9 +35,9 @@ class Entity extends EntityStub implements RepositoryAwareInterface
 	/**
 	 * Get the reference used by repository
 	 *
-	 * @return EntityRefInterface
+	 * @return ?EntityRefInterface
 	 */
-	public function entityRef(): EntityRefInterface
+	public function entityRef(): ?EntityRefInterface
 	{
 		return $this->entityRef;
 	}
@@ -61,7 +61,7 @@ class Entity extends EntityStub implements RepositoryAwareInterface
 	 *
 	 * @return ?string
 	 */
-	public function version()
+	public function version(): ?string
 	{
 		$ref = $this->entityRef();
 
@@ -82,7 +82,7 @@ class Entity extends EntityStub implements RepositoryAwareInterface
 
 	/**
 	 * Set the node's repository reference
-	 * @param EntityRefInterface
+	 * @param EntityRefInterface $ref
 	 */
 	public function setEntityRef(EntityRefInterface $ref): void
 	{
@@ -91,9 +91,9 @@ class Entity extends EntityStub implements RepositoryAwareInterface
 
 	/**
 	 * Set the version for the node
-	 * @param long $version
+	 * @param int $version
 	 */
-	public function setVersion(long $version): void
+	public function setVersion(int $version): void
 	{
 		$this->version = $version;
 	}
@@ -125,7 +125,7 @@ class Entity extends EntityStub implements RepositoryAwareInterface
 	 *
 	 * @return EntityRefInterface[]
 	 */
-	public function getAssociatedNodeRefs($assocQName=null)
+	public function getAssociatedNodeRefs($assocQName = null)
 	{
 		throw new \RuntimeException('Not supported');
 		$associations = $this->getRepository()->getEntityService()->getAssociatedNodeRefs($this, $assocQName);
@@ -146,7 +146,7 @@ class Entity extends EntityStub implements RepositoryAwareInterface
 
 		$association = new NodeAssociation($assocQName, $this, $dstNode);
 		$this->associations->add($association);
-		$this->changed(true);
+		$this->setHasChanged(true);
 
 	}
 
@@ -196,58 +196,80 @@ class Entity extends EntityStub implements RepositoryAwareInterface
 	 * @param string $name
 	 * @param mixed $value
 	 * @return void
-	 * @throws \Exception
+	 * @throws Exception
 	 */
 	public function setPropertyValue(string $name, $value): void
 	{
-		$propDef = $this->getProperty($name)->getDef();
+		$prop = $this->getProperty($name);
+		if ($prop === null) {
+			throw new InvalidPropertyException('Property ' . $name . ' does not exist on ' . $this->getModel());
+		}
+		$propDef = $prop->getDef();
 
 		if ($propDef->isVirtual() && $propDef->hasReference() && $value !== null) {
-			$value = $this->normalizePropertyValue($propDef, $value);
+			$value = $this->normalizeVirtualPropertyValue($propDef, $value);
 		}
 
 		parent::setPropertyValue($name, $value);
 	}
 
-	private function normalizePropertyValue(PropertyDefinition $propDef, $value)
+	/**
+	 * Check if all items in an array are of a certain type
+	 * @param array $array
+	 * @param string $type
+	 * @return bool
+	 */
+	private function isArrayOfType(array $array, string $type): bool
+	{
+		return count($array) == count(array_filter($array, function ($item) use ($type) {
+				return is_a($item, $type);
+			}));
+	}
+
+	/**
+	 * @throws Exception
+	 */
+	private function normalizeVirtualPropertyValue(PropertyDefinition $propDef, $value)
 	{
 		if ($value instanceof EntityStub) return $value;
+		else if ($propDef->isMultiValued() && is_array($value) && count($value) > 0 && $this->isArrayOfType($value, EntityStub::class)) return $value;
 
 		$repo          = $this->getRepository();
 		$entityService = $repo->getEntityService();
 		$modelService  = $repo->getModelService();
 		$targetModel   = $modelService->getModel($propDef->getReference()->getTargetModel());
 		$entityRef     = $entityService->createReference($propDef->getReference()->getTargetModel());
-
-		$primaryKeys = $targetModel->getDef()->getPrimaryKeys()->keys();
+		$primaryKeys   = $targetModel->getDef()->getPrimaryKeys()->keys();
 
 		if (is_string($value) || is_numeric($value)) {
 			if (count($primaryKeys) == 1) {
 				$entityRef->setPropertyValue($primaryKeys[0], $value);
 			} else {
-				throw new \Exception('Can only set simple values for models (' . $this->getModel() . ') with a single primary key');
+				throw new Exception('Can only set simple values for models (' . $this->getModel() . ') with a single primary key');
 			}
 		} else if (is_array($value)) {
 			$valueKeys = array_keys($value);
 			if (count(array_diff($valueKeys, $primaryKeys)) > 0 || count(array_diff($primaryKeys, $valueKeys)) > 0) {
-				throw new \Exception('Key count mismatch for model (' . $this->getModel() . ').  Expecting ' . implode(', ', $primaryKeys) . ', but found ' . implode($valueKeys));
+				throw new Exception('Key count mismatch for model (' . $this->getModel() . ').  Expecting ' . implode(', ', $primaryKeys) . ', but found ' . implode($valueKeys));
 			}
 
-			foreach($primaryKeys as $primaryKey) {
+			foreach ($primaryKeys as $primaryKey) {
 				$entityRef->setPropertyValue($primaryKey, $value[$primaryKey]);
 			}
+		} else if ($value instanceof ModelEntity) {
+			throw new Exception('Model entity ' . get_class($value) . ' must be converted to standard ' . $value->getEntity()->getModel() . ' entity when saving ' . $propDef->getModel() . '.' . $propDef->getName() . '.');
 		} else {
-			throw new \Exception('Unsupported value for primary key');
+			throw new Exception('Unsupported value for primary key');
 		}
 
 		return $entityRef;
 	}
 
-	private function getPrimaryKeys()
+	private function getPrimaryKeys(): array
 	{
 		$primaryKeys = [];
 
-		foreach($this->getProperties() as $property) {
+		foreach ($this->getProperties() as $property) {
 			if ($property->getDef()->isPrimaryKey()) $primaryKeys[] = $property->getDef()->getName();
 		}
 

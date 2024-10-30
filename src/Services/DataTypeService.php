@@ -15,17 +15,19 @@ use WebImage\Models\Services\RepositoryAwareTrait;
 class DataTypeService implements DataTypeServiceInterface
 {
 	use RepositoryAwareTrait;
-	private $NOMAPPER = 'NOMAPPER';
-	private $valueMappers = [];
-	/** @var ValueMapResolver */
-	private $valueMapResolver;
+
+	private string $NO_MAPPER = 'NO_MAPPER';
+	/** @var Dictionary Instantiated value mappers */
+	private Dictionary $valueMappers;
+	/** @var ValueMapResolver Resolver for value mappers  by key */
+	private ValueMapResolver $valueMapResolver;
 
 	/**
 	 * DataTypeService constructor.
 	 */
 	public function __construct(ValueMapResolver $valueMapResolver)
 	{
-		$this->valueMappers = new Dictionary();
+		$this->valueMappers     = new Dictionary();
 		$this->valueMapResolver = $valueMapResolver;
 	}
 
@@ -49,6 +51,7 @@ class DataTypeService implements DataTypeServiceInterface
 
 	/**
 	 * @inheritdoc
+	 * @throws \Exception
 	 */
 	public function valueForStorage(string $propertyTypeName, $value)/* PHP 8 : mixed*/
 	{
@@ -59,6 +62,7 @@ class DataTypeService implements DataTypeServiceInterface
 
 	/**
 	 * @inheritdoc
+	 * @throws \Exception
 	 */
 	public function valueForProperty(string $dataTypeName, $value)/* PHP 8 : mixed*/
 	{
@@ -67,6 +71,9 @@ class DataTypeService implements DataTypeServiceInterface
 		return null === $mapper ? $value : $mapper->forProperty($value);
 	}
 
+	/**
+	 * @throws \Exception
+	 */
 	private function getPropertyValueMapper(string $propertyTypeName): ?ValueMapperInterface
 	{
 		if (!$this->valueMappers->has($propertyTypeName)) {
@@ -75,7 +82,7 @@ class DataTypeService implements DataTypeServiceInterface
 			$valueMapper = $propertyType->getValueMapper();
 
 			if (null === $valueMapper) {
-				$this->valueMappers->set($propertyTypeName, $this->NOMAPPER);
+				$this->valueMappers->set($propertyTypeName, $this->NO_MAPPER);
 				return null;
 			}
 
@@ -84,6 +91,6 @@ class DataTypeService implements DataTypeServiceInterface
 
 		$mapper = $this->valueMappers->get($propertyTypeName);
 
-		return $mapper == $this->NOMAPPER ? null : $mapper;
+		return $mapper == $this->NO_MAPPER ? null : $mapper;
 	}
 }

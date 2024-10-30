@@ -13,15 +13,13 @@ class ModelService extends AbstractModelService implements ModelServiceInterface
 	/** @var ConnectionManager */
 	private ConnectionManager     $connectionManager;
 	private ?DoctrineTableCreator $tableCreator;
-	private TableNameHelper       $tableNameHelper;
 
 	/**
 	 * ModelService constructor.
 	 */
-	public function __construct(ConnectionManager $connectionManager, TableNameHelper $tableNameHelper)
+	public function __construct(ConnectionManager $connectionManager)
 	{
 		$this->connectionManager = $connectionManager;
-		$this->tableNameHelper   = $tableNameHelper;
 		$this->tableCreator      = null;
 	}
 

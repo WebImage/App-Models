@@ -39,14 +39,14 @@ class TableNameHelper
 		return $tableName;
 	}
 
-	public static function shouldDefHavePhysicalTable(ModelDefinitionInterface $def): bool
-	{
-		foreach($def->getProperties() as $propDef) {
-			if (!$propDef->isVirtual()) return true;
-		}
-
-		return false;
-	}
+//	public static function shouldDefHavePhysicalTable(ModelDefinitionInterface $def): bool
+//	{
+//		foreach($def->getProperties() as $propDef) {
+//			if (!$propDef->isVirtual()) return true;
+//		}
+//
+//		return false;
+//	}
 
 	/**
 	 * Get the base node table to use for queries (the "FROM" table)
@@ -69,7 +69,7 @@ class TableNameHelper
 	{
 		$key = self::getDatabaseFriendlyName($name);
 
-		// Append any subkey value
+		// Append any sub-key value
 		foreach($subKeys as $subKey) {
 			if (empty($subKey)) continue;
 			$key .= '_' . self::getDatabaseFriendlyName($subKey);
@@ -105,10 +105,8 @@ class TableNameHelper
 
 	/**
 	 * Convenience method for formatting column alias
-	 * @param string $tableKey
-	 * @param string $column
 	 * @param string $propName (complex dataTypes types will have "child" columns names, where $column becomes $column__$property)
-	 *
+	 * @param string $targetTable
 	 * @return string
 	 */
 	public static function getPropertyTableAlias(string $propName, string $targetTable): string
@@ -122,7 +120,7 @@ class TableNameHelper
 	 * Convenience method for formatting column
 	 * @param string $tableKey
 	 * @param string $column
-	 *
+	 * @param string|null $propName
 	 * @return string
 	 */
 	public static function getColumnName(string $tableKey, string $column, string $propName=null): string
@@ -140,7 +138,7 @@ class TableNameHelper
 	 * @param TableColumn $column
 	 * @return string
 	 */
-	public static function getRefColumnName(ModelDefinitionInterface $typeDef, PropertyDefinition $propDef, TableColumn $column)
+	public static function getRefColumnName(ModelDefinitionInterface $typeDef, PropertyDefinition $propDef, TableColumn $column): string
 	{
 		return sprintf('%s_%s_%s', self::getDatabaseFriendlyName($typeDef->getPluralName()), self::getDatabaseFriendlyName($propDef->getName()), self::getDatabaseFriendlyName($column->getName()));
 	}
@@ -148,17 +146,17 @@ class TableNameHelper
 	/**
 	 * Get a table name for a join operation
 	 *
-	 * @param ModelServiceInterface $typeService
+	 * @param ModelServiceInterface $modelService
 	 * @param string $sourceType
 	 * @param string $targetType
 	 * @param string|null $sourceProperty
 	 * @param string|null $targetProperty
 	 * @return string
 	 */
-	public static function getAssociationTableName(ModelServiceInterface $typeService, string $sourceType, string $targetType, ?string $sourceProperty=null, ?string $targetProperty=null)
+	public static function getAssociationTableName(ModelServiceInterface $modelService, string $sourceType, string $targetType, ?string $sourceProperty=null, ?string $targetProperty=null): string
 	{
-		$sourceTypeDef = $typeService->getModel($sourceType)->getDef();
-		$targetTypeDef = $typeService->getModel($targetType)->getDef();
+		$sourceTypeDef = $modelService->getModel($sourceType)->getDef();
+		$targetTypeDef = $modelService->getModel($targetType)->getDef();
 
 		/**
 		 * If this is a source table property reference to another target

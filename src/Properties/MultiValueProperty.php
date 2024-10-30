@@ -2,12 +2,14 @@
 
 namespace WebImage\Models\Properties;
 
+use WebImage\Core\Collection;
+
 class MultiValueProperty extends AbstractProperty implements MultiValuePropertyInterface
 {
 	/**
-	 * @property array $values An array of values
+	 * @property Collection $values An array of values
 	 **/
-	private $values = [];
+	private Collection $values;
 
 	/**
 	 * @inheritdoc
@@ -22,7 +24,7 @@ class MultiValueProperty extends AbstractProperty implements MultiValuePropertyI
 	 */
 	public function setValues(array $values)
 	{
-		$this->values = [];
+		$this->values = new Collection();
 
 		foreach ($values as $value) {
 			$this->addValue($value);
@@ -39,6 +41,6 @@ class MultiValueProperty extends AbstractProperty implements MultiValuePropertyI
 
 	public function reset()
 	{
-		$this->values = [];
+		$this->values = new Collection();
 	}
 }

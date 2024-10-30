@@ -2,6 +2,7 @@
 
 namespace WebImage\Models\Services;
 
+use WebImage\Core\ArrayHelper;
 use WebImage\Core\Collection;
 use WebImage\Models\Entities\Entity;
 use WebImage\Models\Entities\EntityReference;
@@ -26,7 +27,7 @@ class EntityDebugger {
 		return self::recursivelyDumpAsHtml($entity);
 	}
 
-	private static function recursivelyDumpAsHtml($entity, $depth=0): string
+	private static function recursivelyDumpAsHtml(EntityStub $entity, $depth=0): string
 	{
 		$html = '';
 		$html .= sprintf('<div style="margin-left: %dpx">', $depth * 10);
@@ -36,9 +37,10 @@ class EntityDebugger {
 			$html .= '<div>';
 			$html .= '- ';
 			$html .= $property->getDef()->getName();
+			if ($property instanceof MultiValuePropertyInterface) $html .= '[]';
 			$html .= sprintf(' <span style="color: #3ac; font-style: italic;">(%s)</span>', $property->getDef()->getDataType());
 			if ($property instanceof MultiValuePropertyInterface) {
-				$html .= ' (multi-valued)';
+				$html .= ' (multi-valued) = ' . count($property->getValues()) . ' values';
 			} else {
 				$html .= ' = ';
 				if ($property->getValue() === null) {
@@ -49,11 +51,15 @@ class EntityDebugger {
 						if (is_string($value) && strlen($value) > 100) {
 							$value = substr($value, 0, 97) . '...';
 						}
-						$html .= ' = ' . htmlentities($value);
+						$html .= ' ' . htmlentities($value);
 					} else if ($property->getValue() instanceof EntityReference) {
-						$html .= self::recursivelyDumpAsHtml($property->getValue(), $depth+1);
+						$html .= self::recursivelyDumpAsHtml($property->getValue(), $depth + 1);
 					} else {
-						$html .= gettype($property->getValue());
+						if (is_array($property->getValue()) && ArrayHelper::isAssociative($property->getValue())) {
+							$html .= 'array[' . implode(', ', array_keys($property->getValue())) . ']';
+						} else {
+							$html .= gettype($property->getValue());
+						}
 					}
 				}
 			}

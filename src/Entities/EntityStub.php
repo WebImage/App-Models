@@ -2,6 +2,7 @@
 
 namespace WebImage\Models\Entities;
 
+use WebImage\Core\Collection;
 use WebImage\Core\Dictionary;
 use WebImage\Models\Exceptions\InvalidPropertyException;
 use WebImage\Models\Properties\MultiValuePropertyInterface;
@@ -21,7 +22,8 @@ class EntityStub implements \ArrayAccess
 	/**
 	 * @var bool
 	 */
-	private bool $isChanged = false;
+	private bool $hasChanged = false;
+	private bool $isValid = true; // Assume the best
 
 	/**
 	 * Node constructor.
@@ -66,16 +68,16 @@ class EntityStub implements \ArrayAccess
 		if ($property === null) return null;
 
 		if ($property instanceof MultiValuePropertyInterface) {
-			throw new InvalidPropertyException('Requesting single value on a multi-valued property');
+			throw new InvalidPropertyException('Requesting single value on a multi-valued property: ' . $name);
 		}
 
 		return $property->getValue();
 	}
 
-	private function rawPropertyValues(string $name)
+	private function rawMultiPropertyValues(string $name)
 	{
 		$property = $this->getProperty($name);
-		if ($property === null) return [];
+		if ($property === null) throw new InvalidPropertyException('Unknown property ' . $name . ' on ' . $this->getModel());
 
 		if ($property instanceof SingleValuePropertyInterface) {
 			throw new InvalidPropertyException('Requesting multi-value on single-value property');
@@ -96,16 +98,10 @@ class EntityStub implements \ArrayAccess
 		if ($property === null) return null;
 
 		if ($property->getDef()->isMultiValued()) {
-			$values = $this->rawPropertyValues($name);
-
-			return $values;
+			return $this->rawMultiPropertyValues($name);
 		}
 
-		$value = $this->rawPropertyValue($name);
-
-//		$dataType = $this->getRepository()->getDictionaryService()->getDataType($property->getDef()->getName());
-//		return $dataType->translateValue($value);
-		return $value;
+		return $this->rawPropertyValue($name);
 	}
 
 	/**
@@ -135,7 +131,7 @@ class EntityStub implements \ArrayAccess
 	 */
 	public function setProperty(string $name, PropertyInterface $property): void
 	{
-		$this->changed(true);
+		$this->setHasChanged(true);
 		$this->properties[$name] = $property;
 	}
 
@@ -147,7 +143,7 @@ class EntityStub implements \ArrayAccess
 	 */
 	public function setPropertyValue(string $name, $value): void
 	{
-		$this->changed(true);
+		$this->setHasChanged(true);
 
 		$property = $this->getProperty($name);
 		if ($property === null) throw new \RuntimeException('Cannot set non-existent property: ' . $this->getModel() . '.' . $name);
@@ -155,7 +151,9 @@ class EntityStub implements \ArrayAccess
 		if ($property instanceof SingleValuePropertyInterface) {
 			$property->setValue($value);
 		} else if ($property instanceof MultiValuePropertyInterface) {
-			$property->setValues([$value]);
+			// @TODO May need to check if $value is actually an array first
+//			$property->setValues([$value]);
+			$property->setValues($value);
 		} else {
 			throw new \RuntimeException('Unknown property type: ' . $this->getModel() . '.' . $name);
 		}
@@ -186,18 +184,38 @@ class EntityStub implements \ArrayAccess
 	 * Getter / setter indicating whether the node has been changed
 	 *
 	 * @param bool|null $trueFalse
-	 *
 	 * @return bool|void
+	 * @deprecated Use hasChanged() or setHasChanged() instead
 	 */
 	public function changed(bool $trueFalse = null)
 	{
 		if (null === $trueFalse) {
-			return $this->isChanged;
+			return $this->hasChanged;
 		} else if (!is_bool($trueFalse)) {
 			throw new \InvalidArgumentException('changed() was expecting a boolean value');
 		} else {
-			$this->isChanged = $trueFalse;
+			$this->hasChanged = $trueFalse;
 		}
+	}
+
+	public function setHasChanged(bool $trueFalse): void
+	{
+		$this->hasChanged = $trueFalse;
+	}
+
+	public function hasChanged(): bool
+	{
+		return $this->hasChanged;
+	}
+
+	public function isValid(): bool
+	{
+		return $this->isValid;
+	}
+
+	protected function setIsValid(bool $valid): void
+	{
+		$this->isValid = $valid;
 	}
 
 	public function offsetExists($offset): bool

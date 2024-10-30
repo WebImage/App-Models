@@ -28,7 +28,7 @@ class RepositoryServiceProvider extends AbstractServiceProvider
 		EntityServiceInterface::class,
 		ModelServiceInterface::class,
 		DataTypeServiceInterface::class,
-		TableNameHelper::class
+//		TableNameHelper::class
 	];
 
 	public function register(): void
@@ -39,7 +39,7 @@ class RepositoryServiceProvider extends AbstractServiceProvider
 		$this->registerModelService($container);
 		$this->registerDataTypeService($container);
 
-		$container->addShared(TableNameHelper::class, TableNameHelper::class);
+//		$container->addShared(TableNameHelper::class, TableNameHelper::class);
 	}
 
 	private function registerRepository(DefinitionContainerInterface $container)
@@ -108,16 +108,16 @@ class RepositoryServiceProvider extends AbstractServiceProvider
 	private function registerEntityService(DefinitionContainerInterface $container)
 	{
 		$container->addShared(EntityServiceInterface::class, EntityService::class)
-			->addArgument(ConnectionManager::class)
-			->addArgument(TableNameHelper::class);
+			->addArgument(ConnectionManager::class);
+//			->addArgument(TableNameHelper::class);
 	}
 
 	private function registerModelService(DefinitionContainerInterface $container)
 	{
 		$container
 			->addShared(ModelServiceInterface::class, ModelService::class)
-			->addArgument(ConnectionManager::class)
-			->addArgument(TableNameHelper::class);
+			->addArgument(ConnectionManager::class);
+//			->addArgument(TableNameHelper::class);
 	}
 
 	private function registerDataTypeService(DefinitionContainerInterface $container)

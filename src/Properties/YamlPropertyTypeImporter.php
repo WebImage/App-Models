@@ -18,7 +18,7 @@ class YamlPropertyTypeImporter
 	 * @param array $arr
 	 * @return array
 	 */
-	public function importArray(array $arr)
+	public function importArray(array $arr): array
 	{
 		if (!ArrayHelper::isAssociative($arr)) throw new \RuntimeException('Only [type => def] type definitions are accepted at this time');
 
@@ -35,6 +35,7 @@ class YamlPropertyTypeImporter
 	 * Normalized received definition
 	 * @param string $propName
 	 * @param array|string|mixed $def
+	 * @return array|mixed
 	 */
 	private function normalizeDef(string $propName, $def)
 	{
@@ -45,7 +46,7 @@ class YamlPropertyTypeImporter
 		return $def;
 	}
 
-	private function importPropertyType(array $struct)
+	private function importPropertyType(array $struct): DataTypeDefinition
 	{
 		ArrayHelper::assertKeys($struct, 'type', ['name', 'friendly'], ['field', 'fields', 'mapper', 'view']);
 
@@ -62,7 +63,7 @@ class YamlPropertyTypeImporter
 		return $propTypeDef;
 	}
 
-	private function importTypeFields(DataTypeDefinition $propTypeDef, array $struct)
+	private function importTypeFields(DataTypeDefinition $propTypeDef, array $struct): array
 	{
 		$typeFields = $this->normalizeTypeFields($propTypeDef, $struct);
 
@@ -73,7 +74,7 @@ class YamlPropertyTypeImporter
 		}, $typeFields);
 	}
 
-	private function normalizeTypeFields(DataTypeDefinition $propTypeDef, array $struct)
+	private function normalizeTypeFields(DataTypeDefinition $propTypeDef, array $struct): array
 	{
 		$useTypeField = array_key_exists('field', $struct);
 		$useTypeFields = array_key_exists('fields', $struct);
@@ -86,6 +87,7 @@ class YamlPropertyTypeImporter
 
 		return array_map(function($typeField) {
 			if (is_string($typeField)) $typeField = ['type' => $typeField];
+			else if ($typeField instanceof Config) $typeField = $typeField->toArray();
 
 			return $typeField;
 		}, $typeFields);

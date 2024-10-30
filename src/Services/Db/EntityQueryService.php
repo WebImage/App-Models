@@ -2,6 +2,7 @@
 
 namespace WebImage\Models\Services\Db;
 
+use Doctrine\DBAL\Exception;
 use RuntimeException;
 use WebImage\Core\Collection;
 use WebImage\Models\Defs\PropertyDefinition;
@@ -17,11 +18,12 @@ use WebImage\Models\Entities\Entity;
 use WebImage\Models\Query\Query;
 use WebImage\Models\Services\Db\EntityService;
 use WebImage\Models\Services\RepositoryInterface;
+use WebImage\Models\Services\UnsupportedMultiValueProperty;
 
 class EntityQueryService
 {
-	/** @var \WebImage\Models\Services\Db\EntityService */
-	private $entityService;
+	/** @var EntityService */
+	private EntityService $entityService;
 
 	public function __construct(EntityService $entityService)
 	{
@@ -33,7 +35,9 @@ class EntityQueryService
 	 *
 	 * @param Query $query
 	 *
-	 * @return EntityStub[]
+	 * @return Collection
+	 * @throws Exception
+	 * @throws \Exception
 	 */
 	public function query(Query $query): Collection
 	{
@@ -76,6 +80,9 @@ class EntityQueryService
 		return $this->getEntityService()->getRepository();
 	}
 
+	/**
+	 * @throws UnsupportedMultiValueProperty
+	 */
 	private function convertResultsToEntities(Query $query, array $results/*, string $rootTableKey*/): Collection
 	{
 		$propertyLoader = new PropertyLoader($this->getRepository());
@@ -91,6 +98,9 @@ class EntityQueryService
 		return $entities;
 	}
 
+	/**
+	 * @throws UnsupportedMultiValueProperty
+	 */
 	private function convertResultToEntity(Query $query, array $result, PropertyLoaderInterface $propertyLoader/*, string $rootTableKey*/): ?LazyEntity
 	{
 		$modelName       = $query->getFrom();
@@ -188,6 +198,9 @@ class EntityQueryService
 		return $filterKeywords;
 	}
 
+	/**
+	 * @throws \Exception
+	 */
 	private function configureSelect(DbQueryBuilder $qb, Query $query)
 	{
 		/**
@@ -199,10 +212,10 @@ class EntityQueryService
 		/**
 		 * Add all fields from all tables
 		 */
-		$typeService     = $this->getRepository()->getModelService();
+		$modelService     = $this->getRepository()->getModelService();
 
 		// Add all columns to results
-		$model = $typeService->getModel($query->getFrom());
+		$model = $modelService->getModel($query->getFrom());
 		$tableKey = TableNameHelper::getTableNameFromDef($model->getDef());
 
 		foreach($model->getDef()->getProperties() as $propDef) {
@@ -211,8 +224,8 @@ class EntityQueryService
 			$propertyColumns = TableHelper::getPropertyColumns($this->getRepository()->getModelService(), $model->getDef(), $propDef->getName());
 
 			foreach($propertyColumns->getColumns() as $tableColumn) {
-				$column = TableNameHelper::getColumnName($tableKey, $tableColumn->getName(), $tableColumn->getDataTypeField()->getKey());
-				$alias = TableNameHelper::getColumnNameAlias($tableKey, $tableColumn->getName(), $tableColumn->getDataTypeField()->getKey());
+				$column = TableNameHelper::getColumnName($tableKey, $tableColumn->getName());
+				$alias = TableNameHelper::getColumnNameAlias($tableKey, $tableColumn->getName());
 				$qb->addSelect(sprintf('%s AS %s', $column, $alias));
 			}
 		}

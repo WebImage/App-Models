@@ -5,16 +5,15 @@ namespace WebImage\Models\Defs;
 use WebImage\Models\DataTypes\ValueMapper;
 
 class DataTypeDefinition {
-	private $name;
-	private $friendlyName; /* Friendly Name */
+	private string $name = '';
+	private string $friendlyName = ''; /* Friendly Name */
 	/** @var string $valueMapper A mappers that converts dictionary values to a class */
-	private $valueMapper;
+	private ?string $valueMapper = null;
 	/** @var DataTypeField[] */
-	private $modelFields = [];
+	private array $modelFields = [];
 //	/** @var string A name resolvable to an input element **/
 //	private $defaultFormElement;
-	/** @var string $view */
-	private $view;
+	private ?string $view = null;
 
 	function __construct(string $name, string $friendlyName, string $valueMapper=null, string $view=null)
 	{
@@ -59,7 +58,7 @@ class DataTypeDefinition {
 	/**
 	 * @return DataTypeField[]
 	 */
-	public function getModelFields()
+	public function getModelFields(): array
 	{
 		return $this->modelFields;
 	}
@@ -100,7 +99,7 @@ class DataTypeDefinition {
 
 	/**
 	 * A valuable resolvable to a ValueMapper
-	 * @param $valueMapper
+	 * @param string $valueMapper
 	 */
 	public function setValueMapper(string $valueMapper)
 	{
@@ -116,11 +115,11 @@ class DataTypeDefinition {
 	}
 
 	/**
-	 * Whether or not this data type contains a simple single-column storage field (which must not have a name)
+	 * Whether this data type contains a simple single-column storage field (which must not have a name)
 	 *
 	 * @return bool
 	 */
-	public function isSimpleStorage()
+	public function isSimpleStorage(): bool
 	{
 		return (count($this->modelFields) == 1 && strlen($this->modelFields[0]->getKey()) == 0);
 	}
