@@ -117,15 +117,14 @@ class ResultHelper
 			}
 
 			// Only set property value to referenced Entity IF it has values, otherwise keep the property value as NULL
-			if ($cardinality->isManyToOne()) {
-				$property->setIsValueLoaded(true);
-			}
 			if (!$allNULL) {
 				$property->setValue($refEntity);
 			}
+			if ($cardinality->isManyToOne()) {
+				// Let the property know it has been loaded so that any subsequent changes can be tracked
+				$property->setIsValueLoaded(true);
+			}
 		} else {
-			$property->setIsValueLoaded(true);
-
 			/**
 			 * Simple storage indicates a single column maps to a single property values
 			 * Otherwise, the value is an associative array
@@ -144,6 +143,9 @@ class ResultHelper
 			$value = $this->dataTypeService->valueForProperty($propType->getName(), $value);
 
 			$property->setValue($value);
+
+			// Let the property know it has been loaded so that any subsequent changes can be tracked
+			$property->setIsValueLoaded(true);
 		}
 
 		return $property;

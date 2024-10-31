@@ -2,14 +2,22 @@
 
 namespace WebImage\Models\Properties;
 
-use WebImage\Core\Collection;
-
 class MultiValueProperty extends AbstractProperty implements MultiValuePropertyInterface
 {
 	/**
-	 * @property Collection $values An array of values
+	 * @var MultiValueCollection Captures the original values once setIsValueLoaded(...) has been called.
+	 */
+	private MultiValueCollection $originalValues;
+	/**
+	 * @property MultiValueCollection $values An array of values
 	 **/
-	private Collection $values;
+	private MultiValueCollection $values;
+
+	public function __construct()
+	{
+		parent::__construct();
+		$this->originalValues = new MultiValueCollection();
+	}
 
 	/**
 	 * @inheritdoc
@@ -24,7 +32,7 @@ class MultiValueProperty extends AbstractProperty implements MultiValuePropertyI
 	 */
 	public function setValues(array $values)
 	{
-		$this->values = new Collection();
+		$this->values = new MultiValueCollection();
 
 		foreach ($values as $value) {
 			$this->addValue($value);
@@ -41,6 +49,33 @@ class MultiValueProperty extends AbstractProperty implements MultiValuePropertyI
 
 	public function reset()
 	{
-		$this->values = new Collection();
+		$this->values = new MultiValueCollection();
+	}
+
+	public function hasChanged(): bool
+	{
+		return $this->values->hasChanged();
+	}
+
+	public function getOriginalValues(): MultiValueCollection
+	{
+		return $this->originalValues;
+	}
+
+	public function setIsValueLoaded(bool $loaded): void
+	{
+		parent::setIsValueLoaded($loaded);
+		$this->captureOriginalValues();
+	}
+
+	/**
+	 * Captures all current values into the originalValues collection
+	 */
+	private function captureOriginalValues()
+	{
+		$this->originalValues = new MultiValueCollection();
+		foreach($this->values as $value) {
+			$this->originalValues[] = $value;
+		}
 	}
 }

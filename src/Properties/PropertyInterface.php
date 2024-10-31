@@ -10,7 +10,7 @@ interface PropertyInterface {
 	 *
 	 * @return PropertyDefinition
 	 */
-	public function getDef();
+	public function getDef(): PropertyDefinition;
 
 	/**
 	 * Set the definition for an entity
@@ -30,4 +30,5 @@ interface PropertyInterface {
 	 */
 	public function isValueLoaded(): bool;
 	public function setIsValueLoaded(bool $loaded): void;
+	public function hasChanged(): bool;
 }

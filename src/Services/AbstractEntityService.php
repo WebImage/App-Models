@@ -30,6 +30,7 @@ abstract class AbstractEntityService implements EntityServiceInterface
 		$entity = new Entity($modelName, $this->getRepository());
 
 		$this->populateDefaultPropertyValues($model, $entity);
+		$this->markPropertiesAsLoaded($entity);
 
 		return $entity;
 	}
@@ -40,6 +41,7 @@ abstract class AbstractEntityService implements EntityServiceInterface
 
 		$entity = new EntityReference($modelname);
 		$this->populateDefaultPropertyValues($model, $entity);
+		$this->markPropertiesAsLoaded($entity);
 
 		return $entity;
 	}
@@ -70,5 +72,17 @@ abstract class AbstractEntityService implements EntityServiceInterface
 	public function createQueryBuilder(): QueryBuilder
 	{
 		return new QueryBuilder($this);
+	}
+
+	/**
+	 * Mark all properties as having been loaded
+	 * @param Entity $entity
+	 * @return void
+	 */
+	private function markPropertiesAsLoaded(EntityStub $entity)
+	{
+		foreach($entity->getProperties() as $property) {
+			$property->setIsValueLoaded(true);
+		}
 	}
 }

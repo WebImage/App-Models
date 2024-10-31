@@ -22,7 +22,6 @@ class EntityStub implements \ArrayAccess
 	/**
 	 * @var bool
 	 */
-	private bool $hasChanged = false;
 	private bool $isValid = true; // Assume the best
 
 	/**
@@ -131,7 +130,6 @@ class EntityStub implements \ArrayAccess
 	 */
 	public function setProperty(string $name, PropertyInterface $property): void
 	{
-		$this->setHasChanged(true);
 		$this->properties[$name] = $property;
 	}
 
@@ -143,8 +141,6 @@ class EntityStub implements \ArrayAccess
 	 */
 	public function setPropertyValue(string $name, $value): void
 	{
-		$this->setHasChanged(true);
-
 		$property = $this->getProperty($name);
 		if ($property === null) throw new \RuntimeException('Cannot set non-existent property: ' . $this->getModel() . '.' . $name);
 
@@ -180,32 +176,13 @@ class EntityStub implements \ArrayAccess
 		}
 	}
 
-	/**
-	 * Getter / setter indicating whether the node has been changed
-	 *
-	 * @param bool|null $trueFalse
-	 * @return bool|void
-	 * @deprecated Use hasChanged() or setHasChanged() instead
-	 */
-	public function changed(bool $trueFalse = null)
-	{
-		if (null === $trueFalse) {
-			return $this->hasChanged;
-		} else if (!is_bool($trueFalse)) {
-			throw new \InvalidArgumentException('changed() was expecting a boolean value');
-		} else {
-			$this->hasChanged = $trueFalse;
-		}
-	}
-
-	public function setHasChanged(bool $trueFalse): void
-	{
-		$this->hasChanged = $trueFalse;
-	}
-
 	public function hasChanged(): bool
 	{
-		return $this->hasChanged;
+		foreach($this->getProperties() as $property) {
+			if ($property->hasChanged()) return true;
+		}
+
+		return false;
 	}
 
 	public function isValid(): bool

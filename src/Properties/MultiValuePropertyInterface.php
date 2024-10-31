@@ -7,6 +7,7 @@ interface MultiValuePropertyInterface extends PropertyInterface
 	/**
 	 * Return values
 	 *
+	 * @TODO Not sure SingleValuePropertyInterface is valid???
 	 * @return SingleValuePropertyInterface[]
 	 */
 	public function getValues();
@@ -17,6 +18,12 @@ interface MultiValuePropertyInterface extends PropertyInterface
 	 * @param SingleValuePropertyInterface[] $values
 	 */
 	public function setValues(array $values);
+
+	/**
+	 * Get the original values
+	 * @return mixed
+	 */
+	public function getOriginalValues();
 
 	/**
 	 * Add a value to the internal collection
