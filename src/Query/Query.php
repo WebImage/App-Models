@@ -262,4 +262,13 @@ class Query
 //		$this->setCurrentPage($currentPage);
 //		$this->setResultsPerPage($resultsPerPage);
 //	}
+	public function isJoinedProperty(string $model, string $property): bool
+	{
+		foreach($this->joinProperties as $joinProperty) {
+			if (($joinProperty->getModelName() ?? $this->getFrom()) == $model && $joinProperty->getProperty() == $property) {
+				return true;
+			}
+		}
+		return false;
+	}
 }

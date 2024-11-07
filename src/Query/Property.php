@@ -5,33 +5,33 @@ namespace WebImage\Models\Query;
 class Property
 {
 	/**
-	 * @var string
+	 * @var string|null
 	 */
-	private $modelName;
+	private ?string $modelName;
 	/**
 	 * @var string
 	 */
-	private $property;
+	private string $property;
 
 	/**
 	 * Property constructor.
 	 *
 	 * @param string $sProperty
 	 */
-	public function __construct($sProperty)
+	public function __construct(string $sProperty)
 	{
 		list($typeName, $property) = $this->parseProperty($sProperty);
 		$this->modelName = $typeName;
 		$this->property  = $property;
 	}
 
-	private function parseProperty($str)
+	private function parseProperty($str): array
 	{
 		$parts    = explode('.', $str);
 		$property = array_pop($parts);
-		$typeName = count($parts) > 0 ? implode('.', $parts) : null;
+		$modelName = count($parts) > 0 ? implode('.', $parts) : null;
 
-		return [$typeName, $property];
+		return [$modelName, $property];
 	}
 
 	/**
@@ -39,7 +39,7 @@ class Property
 	 *
 	 * @return string
 	 */
-	public function getModelName()
+	public function getModelName(): ?string
 	{
 		return $this->modelName;
 	}
@@ -49,7 +49,7 @@ class Property
 	 *
 	 * @return string
 	 */
-	public function getProperty()
+	public function getProperty(): string
 	{
 		return $this->property;
 	}

@@ -32,11 +32,11 @@ class DataTypeService implements DataTypeServiceInterface
 	}
 
 	/**
-	 * @param $propertyType
+	 * @param string $propertyType
 	 *
 	 * @return DataTypeDefinition
 	 */
-	public function getDefinition($propertyType): ?DataTypeDefinition
+	public function getDefinition(string $propertyType): ?DataTypeDefinition
 	{
 		return $this->getRepository()->getDictionaryService()->getPropertyType($propertyType);
 	}

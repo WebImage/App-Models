@@ -8,18 +8,20 @@ use WebImage\Models\Defs\DataTypeField;
 class TableColumn
 {
 	/** @var string */
-	private $table;
+	private string $table;
 	/** @var string */
-	private $name;
+	private string $name;
 	/** @var ?string */
-	private $referencedColumnName;
+	private ?string $referencedColumnName;
 	/** @var DataTypeField */
 	private $dataTypeField;
 
 	/**
 	 * PropertyTableColumn constructor.
+	 * @param string $tableName
 	 * @param string $name
-	 * @param DataTypeDefinition $dataTypeField
+	 * @param DataTypeField $dataTypeField
+	 * @param string|null $referencedColumnName
 	 */
 	public function __construct(string $tableName, string $name, DataTypeField $dataTypeField, ?string $referencedColumnName = null)
 	{

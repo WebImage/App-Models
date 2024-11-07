@@ -39,6 +39,7 @@ class EntityDebugger
 	{
 		return [
 			'model' => $entity->getModel(),
+			'class' => get_class($entity),
 			'hasRepository' => $entity instanceof Entity ? $entity->getRepository() !== null : false,
 			'properties' => self::summarizeProperties($entity)
 		];

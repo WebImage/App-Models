@@ -39,6 +39,11 @@ class TableNameHelper
 		return $tableName;
 	}
 
+	public static function getPropertyTableName(ModelDefinitionInterface $def, PropertyDefinition $propDef): string
+	{
+		return self::getTableNameFromDef($def, $propDef->getName());
+	}
+
 //	public static function shouldDefHavePhysicalTable(ModelDefinitionInterface $def): bool
 //	{
 //		foreach($def->getProperties() as $propDef) {
@@ -93,14 +98,12 @@ class TableNameHelper
 	 *
 	 * @return string
 	 */
-	public static function getColumnNameAlias(string $tableKey, string $column, string $propName=null): string
+//	public static function getColumnNameAlias(string $tableKey, string $column, string $propName=null): string
+	public static function getColumnNameAlias(string $tableKey, string $column, ?string ...$subKeys): string
 	{
 		$format = '%s__%s';
-		if (null !== $propName) $column = sprintf($format, $column, $propName);
 
-		$alias = sprintf($format, $tableKey, $column);
-
-		return $alias;
+		return sprintf($format, $tableKey, TableNameHelper::getColumnKey($column, ...$subKeys));
 	}
 
 	/**
@@ -111,36 +114,41 @@ class TableNameHelper
 	 */
 	public static function getPropertyTableAlias(string $propName, string $targetTable): string
 	{
-		$format = '%s__%s';
-
-		return sprintf($format, $propName, $targetTable);
+		return sprintf('p_%s', $propName);
+//		$format = '%s__%s';
+//
+//		return sprintf($format, $propName, $targetTable);
 	}
 
 	/**
 	 * Convenience method for formatting column
 	 * @param string $tableKey
-	 * @param string $column
-	 * @param string|null $propName
+	 * @param string $columnKey
+	 * @param string|null ...$subKeys
 	 * @return string
 	 */
-	public static function getColumnName(string $tableKey, string $column, string $propName=null): string
+	public static function getTableColumnName(string $tableKey, string $columnKey, ?string ...$subKeys): string
 	{
-		if (null !== $propName) $column = sprintf('%s_%s', $column, $propName);
-
-		return sprintf('`%s`.`%s`', $tableKey, $column);
+		return sprintf('`%s`.`%s`', $tableKey, TableNameHelper::getColumnKey($columnKey, ...$subKeys));
 	}
 
-	/**
-	 * Get the name of a column that references another table
-	 *
-	 * @param ModelDefinitionInterface $typeDef
-	 * @param PropertyDefinition $propDef
-	 * @param TableColumn $column
-	 * @return string
-	 */
-	public static function getRefColumnName(ModelDefinitionInterface $typeDef, PropertyDefinition $propDef, TableColumn $column): string
+//	/**
+//	 * Get the name of a column that references another table
+//	 *
+//	 * @param ModelDefinitionInterface $typeDef
+//	 * @param PropertyDefinition $propDef
+//	 * @param TableColumn $column
+//	 * @return string
+//	 */
+//	public static function getRefColumnName(ModelDefinitionInterface $typeDef, PropertyDefinition $propDef, TableColumn $column): string
+//	{
+//		return sprintf('%s_%s_%s', self::getDatabaseFriendlyName($typeDef->getPluralName()), self::getDatabaseFriendlyName($propDef->getName()), self::getDatabaseFriendlyName($column->getName()));
+//	}
+	public static function getRefColumnNameAlias(string $tableKey, string $propName, string $column, ?string $subKey): string
 	{
-		return sprintf('%s_%s_%s', self::getDatabaseFriendlyName($typeDef->getPluralName()), self::getDatabaseFriendlyName($propDef->getName()), self::getDatabaseFriendlyName($column->getName()));
+		$format = '%s__%s';
+
+		return sprintf($format, $tableKey, TableNameHelper::getColumnKey($propName, $column, $subKey));
 	}
 
 	/**

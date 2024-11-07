@@ -11,7 +11,7 @@ use WebImage\Models\Properties\MultiValueProperty;
 use WebImage\Models\Properties\MultiValuePropertyInterface;
 
 class EntityDebugger {
-	public static function renderEntitiesAsHtml(Collection $entities): string
+	public static function renderEntitiesAsHtml(iterable $entities): string
 	{
 		$html = '';
 

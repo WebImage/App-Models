@@ -39,6 +39,14 @@ class PropertyReferenceDefinition
 	}
 
 	/**
+	 * @return bool
+	 */
+	public function hasReverseProperty(): bool
+	{
+		return $this->reverseProperty !== null;
+	}
+
+	/**
 	 * @return string
 	 */
 	public function getReverseProperty(): ?string

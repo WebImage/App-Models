@@ -30,20 +30,33 @@ abstract class AbstractEntityService implements EntityServiceInterface
 		$entity = new Entity($modelName, $this->getRepository());
 
 		$this->populateDefaultPropertyValues($model, $entity);
-		$this->markPropertiesAsLoaded($entity);
 
 		return $entity;
 	}
 
-	public function createReference(string $modelname): EntityReference
+	/**
+	 * Create entity and populate default property values
+	 * @param string $modelName
+	 * @return EntityReference
+	 */
+	public function createReference(string $modelName): EntityReference
 	{
-		$model = $this->getRepository()->getModelService()->getModel($modelname);
+		$model = $this->getRepository()->getModelService()->getModel($modelName);
 
-		$entity = new EntityReference($modelname);
+		$entity = $this->createEntityReference($modelName);
 		$this->populateDefaultPropertyValues($model, $entity);
-		$this->markPropertiesAsLoaded($entity);
 
 		return $entity;
+	}
+
+	/**
+	 * Create the actual EntityReference object
+	 * @param string $modelName
+	 * @return EntityReference
+	 */
+	protected function createEntityReference(string $modelName): EntityReference
+	{
+		return new EntityReference($modelName);
 	}
 
 
@@ -74,15 +87,15 @@ abstract class AbstractEntityService implements EntityServiceInterface
 		return new QueryBuilder($this);
 	}
 
-	/**
-	 * Mark all properties as having been loaded
-	 * @param Entity $entity
-	 * @return void
-	 */
-	private function markPropertiesAsLoaded(EntityStub $entity)
-	{
-		foreach($entity->getProperties() as $property) {
-			$property->setIsValueLoaded(true);
-		}
-	}
+//	/**
+//	 * Mark all properties as having been loaded
+//	 * @param Entity $entity
+//	 * @return void
+//	 */
+//	private function markPropertiesAsLoaded(EntityStub $entity)
+//	{
+//		foreach($entity->getProperties() as $property) {
+//			$property->setIsValueLoaded(true);
+//		}
+//	}
 }

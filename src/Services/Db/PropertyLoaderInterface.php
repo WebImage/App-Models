@@ -7,10 +7,10 @@ use WebImage\Models\Entities\EntityStub;
 interface PropertyLoaderInterface
 {
 	/**
-	 * Lazily loads a property value for an entity
-	 * @param string $property
+	 * Lazily loads a property value for a set of entities
+	 * @param string $propertyName
 	 * @param EntityStub[] $entities
 	 * @return void
 	 */
-	public function loadPropertyForEntities(string $property, array $entities): void;
+	public function loadPropertyForEntities(string $propertyName, array $entities): void;
 }

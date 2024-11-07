@@ -22,7 +22,7 @@ class MultiValueProperty extends AbstractProperty implements MultiValuePropertyI
 	/**
 	 * @inheritdoc
 	 */
-	public function getValues()
+	public function getValues(): MultiValueCollection
 	{
 		return $this->values;
 	}

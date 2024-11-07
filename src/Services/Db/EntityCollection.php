@@ -24,6 +24,7 @@ class EntityCollection extends Collection implements PropertyLoaderInterface
 
 	/**
 	 * @param EntityService $entityService
+	 * @param PropertyLoaderInterface $propertyLoader
 	 */
 	public function __construct(EntityService $entityService, PropertyLoaderInterface $propertyLoader)
 	{
@@ -54,13 +55,13 @@ class EntityCollection extends Collection implements PropertyLoaderInterface
 
 	/**
 	 * Loads property values for all collected Entities.
-	 * @param EntityStub $entity
-	 * @param string $property
+	 * @param string $propertyNameName
+	 * @param array $entities
 	 * @return void
 	 */
-	public function loadPropertyForEntities(string $propertyName, array $entities): void
+	public function loadPropertyForEntities(string $propertyNameName, array $entities): void
 	{
-		$this->propertyLoader->loadPropertyForEntities($propertyName, $this->toArray());
+		$this->propertyLoader->loadPropertyForEntities($propertyNameName, $this->toArray());
 
 //		if (count($this) == 0) return;
 //

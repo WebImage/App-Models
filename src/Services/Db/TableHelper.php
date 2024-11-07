@@ -2,6 +2,7 @@
 
 namespace WebImage\Models\Services\Db;
 
+use Exception;
 use WebImage\Models\Defs\ModelDefinitionInterface;
 use WebImage\Models\Helpers\PropertyReferenceHelper;
 use WebImage\Models\Services\DataTypeServiceInterface;
@@ -11,25 +12,29 @@ use WebImage\Node\Service\Db\PropertyTableColumns;
 
 class TableHelper
 {
-	public static function getAssociationTable(ModelServiceInterface $modelService, string $sourceType, string $targetType, ?string $sourceProperty=null, ?string $targetProperty=null): AssociationTable
+	/**
+	 * @throws Exception
+	 */
+	public static function getAssociationTable(ModelServiceInterface $modelService, string $sourceModel, string $targetModel, ?string $sourceProperty = null, ?string $targetProperty = null): AssociationTable
 	{
-		$tableName     = TableNameHelper::getAssociationTableName($modelService, $sourceType, $targetType, $sourceProperty, $targetProperty);
+		$tableName = TableNameHelper::getAssociationTableName($modelService, $sourceModel, $targetModel, $sourceProperty, $targetProperty);
 
-		$sourceTypeDef         = $modelService->getModel($sourceType)->getDef();
-		$sourceTableName       = TableNameHelper::getTableNameFromDef($sourceTypeDef);
-		$sourcePropertyColumns = $sourceProperty === null ? self::getPrimaryKeyColumns($modelService, $sourceTypeDef) : self::getPropertiesColumns($modelService, $sourceTypeDef, $sourceProperty);
+		$sourceModelDef        = $modelService->getModel($sourceModel)->getDef();
+		$sourceTableName       = TableNameHelper::getTableNameFromDef($sourceModelDef);
+//		$sourcePropertyColumns = self::getPrimaryKeyColumns($modelService, $sourceModelDef);
+		$sourcePropertyColumns = $sourceProperty === null ? self::getPrimaryKeyColumns($modelService, $sourceModelDef) : self::getPropertiesColumns($modelService, $sourceModelDef, $sourceProperty);
 
-		$targetTypeDef         = $modelService->getModel($targetType)->getDef();
-		$targetTableName       = TableNameHelper::getTableNameFromDef($targetTypeDef);
-		$targetPropertyColumns = $targetProperty === null ? self::getPrimaryKeyColumns($modelService, $targetTypeDef) : self::getPropertiesColumns($modelService, $targetTypeDef, $targetProperty);
+		$targetModelDef        = $modelService->getModel($targetModel)->getDef();
+		$targetTableName       = TableNameHelper::getTableNameFromDef($targetModelDef);
+		$targetPropertyColumns = $targetProperty === null ? self::getPrimaryKeyColumns($modelService, $targetModelDef) : self::getPropertiesColumns($modelService, $targetModelDef, $targetProperty);
 
-		$source = new AssociationTableTarget($sourceTableName, $sourceType, $sourceProperty, $sourcePropertyColumns);
-		$target = new AssociationTableTarget($targetTableName, $targetType, $targetProperty, $targetPropertyColumns);
+		$source = new AssociationTableTarget($sourceTableName, $sourceModel, $sourceProperty, $sourcePropertyColumns);
+		$target = new AssociationTableTarget($targetTableName, $targetModel, $targetProperty, $targetPropertyColumns);
 
 		return new AssociationTable($tableName, $source, $target);
 	}
 
-	public static function getPropertiesColumns(ModelServiceInterface $modelService, ModelDefinitionInterface $modelDef, ?string $property=null): PropertiesColumns
+	public static function getPropertiesColumns(ModelServiceInterface $modelService, ModelDefinitionInterface $modelDef, ?string $property = null): PropertiesColumns
 	{
 		if ($property === null) return self::getModelColumns($modelService, $modelDef);
 
@@ -42,24 +47,24 @@ class TableHelper
 		}
 
 		if ($propDef->isVirtual()) {
-			$reference     = $propDef->getReference();
+			$reference = $propDef->getReference();
 
 			if ($reference === null) {
 				throw new \RuntimeException('Unsupported virtual type without reference: ' . $propDef->getModel() . '.' . $propDef->getName());
 			}
 
 			$targetModel = $modelService->getModel($reference->getTargetModel());
-			if ($targetModel === null) throw new \Exception(sprintf('%s.%s references an invalid type: %s', $propDef->getModel(), $propDef->getName(), $reference->getTargetModel()));
+			if ($targetModel === null) throw new Exception(sprintf('%s.%s references an invalid type: %s', $propDef->getModel(), $propDef->getName(), $reference->getTargetModel()));
 			$targetModelDef = $targetModel->getDef();
 
-			foreach(self::getPrimaryKeyColumns($modelService, $targetModelDef)->getProperties() as $key => $modelTableColumns) {
+			foreach (self::getPrimaryKeyColumns($modelService, $targetModelDef)->getProperties() as $key => $modelTableColumns) {
 				$localModelColumns = new ModelPropertyTableColumns($modelDef->getPluralName(), $tableName);
 				$localModelColumns->setReferencedModel($modelTableColumns->getModel());
 				$localModelColumns->setReferencedTable($modelTableColumns->getTable());
 				$localModelColumns->setReferencedProperty($key);
 
-				foreach($modelTableColumns->getColumns() as $tableColumn) {
-					$localColumnName = TableNameHelper::getColumnKey($propDef->getName(), $tableColumn->getName());
+				foreach ($modelTableColumns->getColumns() as $tableColumn) {
+					$localColumnName  = TableNameHelper::getColumnKey($propDef->getName(), $tableColumn->getName());
 					$localTableColumn = new TableColumn($tableName, $localColumnName, $tableColumn->getDataTypeField(), $tableColumn->getName());
 					$localModelColumns->addColumn($localTableColumn);
 				}
@@ -76,7 +81,7 @@ class TableHelper
 
 			$propertyColumns = new ModelPropertyTableColumns($propDef->getModel(), TableNameHelper::getTableNameFromDef($modelDef));
 
-			foreach($dataType->getModelFields() as $modelField) {
+			foreach ($dataType->getModelFields() as $modelField) {
 				$subKey         = strlen($modelField->getKey()) == 0 ? '' : $modelField->getKey();
 				$columnName     = TableNameHelper::getColumnKey($propDef->getName(), $subKey);
 				$propertyColumn = new TableColumn($tableName, $columnName, $modelField);
@@ -91,7 +96,7 @@ class TableHelper
 	}
 
 	/**
-	 * @throws \Exception
+	 * @throws Exception
 	 */
 	public static function getPropertyColumns(ModelServiceInterface $modelService, ModelDefinitionInterface $modelDef, string $property): ModelPropertyTableColumns
 	{
@@ -99,13 +104,13 @@ class TableHelper
 	}
 
 	/**
-	 * @throws \Exception
+	 * @throws Exception
 	 */
 	public static function getModelColumns(ModelServiceInterface $modelService, ModelDefinitionInterface $modelDef): PropertiesColumns
 	{
-		$propertiesColumns= new PropertiesColumns();
+		$propertiesColumns = new PropertiesColumns();
 
-		foreach($modelDef->getProperties() as $property) {
+		foreach ($modelDef->getProperties() as $property) {
 			$columns = self::getPropertiesColumns($modelService, $modelDef, $property->getName())->getPropertyColumns($property->getName());
 			$propertiesColumns->setPropertyColumns($property->getName(), $columns);
 		}
@@ -119,14 +124,15 @@ class TableHelper
 	 * @param ModelDefinitionInterface $modelDef
 	 * @param string|null $property
 	 * @return PropertiesColumns
-	 * @throws \Exception
+	 * @throws Exception
 	 */
 	public static function getPrimaryKeyColumns(ModelServiceInterface $modelService, ModelDefinitionInterface $modelDef): PropertiesColumns
 	{
 		$propertiesColumns = new PropertiesColumns();
 		$primaryKeys       = $modelDef->getPrimaryKeys()->keys();
 
-		foreach($primaryKeys as $primaryKey) {
+
+		foreach ($primaryKeys as $primaryKey) {
 			$primaryKeyColumns = self::getPropertiesColumns($modelService, $modelDef, $primaryKey)->getPropertyColumns($primaryKey);
 			$propertiesColumns->setPropertyColumns($primaryKey, $primaryKeyColumns);
 		}

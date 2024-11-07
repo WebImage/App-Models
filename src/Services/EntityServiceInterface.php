@@ -17,6 +17,7 @@ interface EntityServiceInterface extends RepositoryAwareInterface
 	public function get(): Entity;
 
 	/**
+	 * Create an Entity that is ready to be manipulated and saved.  Load any default property values
 	 * @param string $modelName
 	 * @return Entity
 	 * @throws InvalidModelException

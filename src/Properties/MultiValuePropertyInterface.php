@@ -7,10 +7,9 @@ interface MultiValuePropertyInterface extends PropertyInterface
 	/**
 	 * Return values
 	 *
-	 * @TODO Not sure SingleValuePropertyInterface is valid???
-	 * @return SingleValuePropertyInterface[]
+	 * @return MultiValueCollection
 	 */
-	public function getValues();
+	public function getValues(): MultiValueCollection;
 
 	/**
 	 * Sets the root values

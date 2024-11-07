@@ -32,20 +32,30 @@ class QueryBuilder
 
 	/**
 	 * @param string $from
+	 * @return QueryBuilder
 	 */
-	public function from(string $from)
+	public function from(string $from): QueryBuilder
 	{
-		$this->query->setFrom($from);
+		$this->query->setFrom($this->normalizeModelName($from));
 
 		return $this;
+	}
+
+	private function normalizeModelName(string $modelName): string
+	{
+		// Model may be supplied as singular or plural value, so running the same through modelService will ensure we are working with the correct form
+		$model = $this->entityService->getRepository()->getModelService()->getModel($modelName);
+		if ($model === null) throw new \InvalidArgumentException('Model ' . $modelName . ' not found');
+
+		return $model->getDef()->getName();
 	}
 
 	/**
 	 * @param mixed|array|string $properties
 	 *
-	 * @return $this
+	 * @return QueryBuilder
 	 */
-	public function select($properties)
+	public function select($properties): QueryBuilder
 	{
 		$properties = $this->normalizeProperties($properties);
 
@@ -59,9 +69,9 @@ class QueryBuilder
 	/**
 	 * @param mixed|array|string $properties
 	 *
-	 * @return $this
+	 * @return QueryBuilder
 	 */
-	public function join($properties)
+	public function join($properties): QueryBuilder
 	{
 		$properties = $this->normalizeProperties($properties);
 
@@ -75,6 +85,7 @@ class QueryBuilder
 	/**
 	 * @param string|int|array|null $id
 	 * @return Entity|null
+	 * @throws Exception
 	 */
 	public function get($id=null): ?Entity
 	{
@@ -163,7 +174,7 @@ class QueryBuilder
 	 *
 	 * @return Property[]
 	 */
-	private function normalizeProperties($properties)
+	private function normalizeProperties($properties): array
 	{
 		$properties = is_array($properties) ? $properties : [$properties];
 		$return = [];

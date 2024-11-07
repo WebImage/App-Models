@@ -16,7 +16,7 @@ interface DataTypeServiceInterface extends RepositoryAwareInterface
 	 *
 	 * @return DataTypeDefinition
 	 */
-	public function getDefinition($propertyType): ?DataTypeDefinition;
+	public function getDefinition(string $propertyType): ?DataTypeDefinition;
 
 	/**
 	 * Get all datatypes

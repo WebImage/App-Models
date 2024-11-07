@@ -24,9 +24,9 @@ use WebImage\Models\TypeFields\Type;
 class DoctrineTableCreator
 {
 	/** @var ModelService */
-	private $modelService;
-	/** @var LoggerInterface */
-	private $logger;
+	private ModelService $modelService;
+	/** @var LoggerInterface|null */
+	private ?LoggerInterface $logger = null;
 
 	/**
 	 * TableCreator constructor.
@@ -64,8 +64,10 @@ class DoctrineTableCreator
 
 			if (count($primaryKeys) > 0) $table->setPrimaryKey($primaryKeys);
 		}
+		$platform   = $this->modelService->getConnectionManager()->getConnection()->getDatabasePlatform();
+		$comparator = new Comparator($platform);
 
-		return Comparator::compareSchemas($this->getSchemaManager()->introspectSchema(), $newSchema);
+		return $comparator->compareSchemas($this->getSchemaManager()->introspectSchema(), $newSchema);
 	}
 
 	/**
@@ -75,8 +77,8 @@ class DoctrineTableCreator
 	 */
 	public function importModels(array $models): void
 	{
-		$diffs = $this->diffModels($models);
-		$conn  = $this->modelService->getConnectionManager()->getConnection();
+		$diffs                = $this->diffModels($models);
+		$conn                 = $this->modelService->getConnectionManager()->getConnection();
 		$diffs->removedTables = [];
 
 		// Remove "Removals"
@@ -89,7 +91,7 @@ class DoctrineTableCreator
 			$tableDiff->removedIndexes     = [];
 		}
 
-		foreach ($diffs->toSaveSql($conn->getDatabasePlatform()) as $sql) {
+		foreach ($conn->getDatabasePlatform()->getAlterSchemaSQL($diffs) as $sql) {
 			$conn->executeQuery($sql);
 		}
 	}
@@ -100,6 +102,7 @@ class DoctrineTableCreator
 	 * @param ModelDefinition $modelDef
 	 * @param Table $table
 	 * @throws SchemaException
+	 * @throws Exception
 	 */
 	private function createTableColumns(ModelDefinition $modelDef, Table $table)
 	{
@@ -174,9 +177,10 @@ class DoctrineTableCreator
 			if (!$propDef->isMultiValued()) continue;
 
 			$propertyTableName = TableNameHelper::getTableNameFromDef($modelDef, $propDef->getName());
-			$columns           = TableHelper::getPropertiesColumns($this->modelService, $modelDef, $propDef->getName());
-			$propertyTable     = $schema->createTable($propertyTableName);
-			$primaryKeys       = [];
+
+			$columns       = TableHelper::getPropertiesColumns($this->modelService, $modelDef, $propDef->getName());
+			$propertyTable = $schema->createTable($propertyTableName);
+			$primaryKeys   = [];
 
 			/**
 			 * Add columns for multi-valued property
@@ -221,6 +225,7 @@ class DoctrineTableCreator
 	private function createTableAssociations(ModelDefinition $modelDef, Table $table, Schema $newSchema)
 	{
 		echo 'Model: ' . $modelDef->getName() . PHP_EOL;
+
 		foreach ($modelDef->getProperties() as $propDef) {
 			if (!$propDef->isVirtual() || !$propDef->hasReference()) continue;
 
@@ -233,24 +238,25 @@ class DoctrineTableCreator
 			}
 
 			$handled = $cardinality->isOneToOne() || $cardinality->isManyToMany() || $cardinality->isOneToMany();
-			echo '  ' . $modelDef->getPluralName() . '.' . $propDef->getName() . ' ' . ($propDef->isVirtual()?'VIRTUAL ':'') . ($propDef->hasReference()?'REFERENCE ':'') . $cardinality . ' (' . ($handled ? 'Handled' : 'Unhandled') . ')' . PHP_EOL;
+			echo '  ' . $modelDef->getPluralName() . '.' . $propDef->getName() . ' ' . ($propDef->isVirtual() ? 'VIRTUAL ' : '') . ($propDef->hasReference() ? 'REFERENCE ' : '') . $cardinality . ' (' . ($handled ? 'Handled' : 'Unhandled') . ')' . PHP_EOL;
 
 			if ($cardinality->isOneToOne()) {
 				$this->createOneToOneProperty($table, $modelDef, $propDef);
 			} else if ($cardinality->isOneToMany()) {
-				$this->createAssociationTable($propDef, $newSchema);
-			// Nothing to be done, as this will be handled by the associated type in manyToOne?
-			// @TODO should a JOIN table be created to handle this on some occasions?
+				$this->createPropertyValuesTable($propDef, $newSchema);
+				// Nothing to be done, as this will be handled by the associated type in manyToOne?
+				// @TODO should a JOIN table be created to handle this on some occasions?
 			} else if ($cardinality->isManyToOne()) {
 				if ($reference->getReverseProperty() === null) { // When "reverse property" is set then that model will setup the required association table
 					throw new Exception($cardinality . ' is not implemented');
 				}
 			} else if ($cardinality->isManyToMany()) {
-				$this->createAssociationTable($propDef, $newSchema);
+				$this->createPropertyValuesTable($propDef, $newSchema);
 			} else {
 				throw new Exception('Unhandled cardinality ' . $cardinality . ' on ' . $propDef->getModel() . '.' . $propDef->getName() . ' -> ' . $reference->getTargetModel() . ($reference->getReverseProperty() === null ? '' : '.' . $reference->getReverseProperty()));
 			}
 		}
+
 //		echo $modelDef->getName() . '.createReverse' . PHP_EOL;
 //		$this->createReversePropertyReferences($modelDef, $table, $newSchema);
 	}
@@ -334,19 +340,19 @@ class DoctrineTableCreator
 		$targetTableColumns = [$sourcePropertyColumns->getColumns(), $targetPropertyColumns->getColumns()];
 
 		/** @var TableColumn[] $targetColumns */
-		foreach($targetTableColumns as $targetColumns) {
-			$foreignTable = null;
-			$localColumnNames = [];
+		foreach ($targetTableColumns as $targetColumns) {
+			$foreignTable       = null;
+			$localColumnNames   = [];
 			$foreignColumnNames = [];
-			foreach($targetColumns as $column) {
+			foreach ($targetColumns as $column) {
 				$foreignTable = $column->getTableName();
-				$columnName = TableNameHelper::getColumnKey($column->getTableName(), $column->getName());
-				$type       = DoctrineTypeMap::getDoctrineType($column->getDataTypeField()->getType());
-				$options    = $column->getDataTypeField()->getOptions()->toArray();
+				$columnName   = TableNameHelper::getColumnKey($column->getTableName(), $column->getName());
+				$type         = DoctrineTypeMap::getDoctrineType($column->getDataTypeField()->getType());
+				$options      = $column->getDataTypeField()->getOptions()->toArray();
 
 
 				$propTable->addColumn($columnName, $type, $options);
-				$localColumnNames[] = $columnName;
+				$localColumnNames[]   = $columnName;
 				$foreignColumnNames[] = $column->getName();
 			}
 
@@ -360,57 +366,59 @@ class DoctrineTableCreator
 	 * @param PropertyDefinition $propDef
 	 * @param Schema $newSchema
 	 * @throws SchemaException
+	 * @throws Exception
 	 */
-	private function createAssociationTable(PropertyDefinition $propDef, Schema $newSchema)
+	private function createPropertyValuesTable(PropertyDefinition $propDef, Schema $newSchema)
 	{
 		$typeService = $this->modelService;
 		$association = TableHelper::getAssociationTable($typeService, $propDef->getModel(), $propDef->getReference()->getTargetModel(), $propDef->getName(), $propDef->getReference()->getReverseProperty());
 
-		if (!$newSchema->hasTable($association->getTableName())) {
-
+		if ($newSchema->hasTable($association->getTableName())) {
+			$associationTable = $newSchema->getTable($association->getTableName());
+		} else {
 			$associationTable = $newSchema->createTable($association->getTableName());
+		}
 
-			$indexes = [];
+		$indexes = [];
 
-			/** @var AssociationTableTarget[] $targetTables */
-			$targetTables = [$association->getSource(), $association->getTarget()];
+		/** @var AssociationTableTarget[] $targetTables */
+		$targetTables = [$association->getSource(), $association->getTarget()];
 
-			foreach ($targetTables as $targetTable) {
+		foreach ($targetTables as $targetTable) {
 
-				$indexName    = 'ix_' . $targetTable->getTableName();
-				$indexColumns = [];
+			$indexName    = 'ix_' . $targetTable->getTableName();
+			$indexColumns = [];
 
-				/**
-				 * Add Columns
-				 */
-				foreach ($targetTable->getPropertyColumns()->getColumns() as $column) {
-					$name = TableNameHelper::getColumnKey($targetTable->getTableName(), $column->getName());
-					$type    = DoctrineTypeMap::getDoctrineType($column->getDataTypeField()->getType());
-					$options = $column->getDataTypeField()->getOptions()->toArray();
-					$associationTable->addColumn($name, $type, $options);
+			/**
+			 * Add Columns
+			 */
+			foreach ($targetTable->getPropertiesColumns()->getColumns() as $column) {
+				$name    = TableNameHelper::getColumnKey($targetTable->getTableName(), $column->getName());
+				$type    = DoctrineTypeMap::getDoctrineType($column->getDataTypeField()->getType());
+				$options = $column->getDataTypeField()->getOptions()->toArray();
+				$associationTable->addColumn($name, $type, $options);
 
-					$indexColumns[] = $name;
-				}
-
-				/**
-				 * Prepare indexes
-				 */
-				foreach ($targetTables as $targetTable2) {
-					if ($targetTable2->getTableName() == $targetTable->getTableName()) continue;
-
-					$indexName .= '_' . $targetTable2->getTableName();
-
-					foreach ($targetTable2->getPropertyColumns()->getColumns() as $column) {
-						$indexColumns[] = TableNameHelper::getColumnKey($targetTable2->getTableName(), $column->getName());
-					}
-				}
-
-				$indexes[$indexName] = $indexColumns;
+				$indexColumns[] = $name;
 			}
 
-			foreach ($indexes as $indexName => $indexColumns) {
-				$associationTable->addIndex($indexColumns, $indexName);
+			/**
+			 * Prepare indexes
+			 */
+			foreach ($targetTables as $targetTable2) {
+				if ($targetTable2->getTableName() == $targetTable->getTableName()) continue;
+
+				$indexName .= '_' . $targetTable2->getTableName();
+
+				foreach ($targetTable2->getPropertiesColumns()->getColumns() as $column) {
+					$indexColumns[] = TableNameHelper::getColumnKey($targetTable2->getTableName(), $column->getName());
+				}
 			}
+
+			$indexes[$indexName] = $indexColumns;
+		}
+
+		foreach ($indexes as $indexName => $indexColumns) {
+			$associationTable->addIndex($indexColumns, $indexName);
 		}
 	}
 

@@ -2,6 +2,8 @@
 
 namespace WebImage\Models\Properties;
 
+use WebImage\Core\Dictionary;
+
 interface SingleValuePropertyInterface extends PropertyInterface
 {
 	/**
@@ -13,7 +15,7 @@ interface SingleValuePropertyInterface extends PropertyInterface
 	/**
 	 * Set the property value
 	 *
-	 * @param string|int|array[string]mixed|Dictionary $value
+	 * @param string|int|string[]|mixed|Dictionary $value
 	 */
 	public function setValue($value);
 

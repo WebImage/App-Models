@@ -15,7 +15,7 @@ class Model implements RepositoryAwareInterface
 	use RepositoryAwareTrait;
 
 	/** @var ModelDefinitionInterface */
-	private $def;
+	private ModelDefinitionInterface $def;
 
 	/**
 	 * Save the node type to the service

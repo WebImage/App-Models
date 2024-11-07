@@ -9,22 +9,22 @@ class AssociationTableTarget
 	/** @var string */
 	private $type;
 	/** @var ?string */
-	private $property;
+	private ?string $property;
 	/** @var PropertiesColumns */
-	private $propertyColumns;
+	private PropertiesColumns $propertiesColumns;
 
 	/**
 	 * AssociationTableTarget constructor.
 	 * @param string $type
 	 * @param string|null $property
-	 * @param PropertiesColumns $propertyColumns
+	 * @param PropertiesColumns $propertiesColumns
 	 */
-	public function __construct(string $tableName, string $type, ?string $property, PropertiesColumns $propertyColumns)
+	public function __construct(string $tableName, string $type, ?string $property, PropertiesColumns $propertiesColumns)
 	{
 		$this->tableName       = $tableName;
 		$this->type            = $type;
 		$this->property        = $property;
-		$this->propertyColumns = $propertyColumns;
+		$this->propertiesColumns = $propertiesColumns;
 	}
 
 	/**
@@ -54,8 +54,8 @@ class AssociationTableTarget
 	/**
 	 * @return PropertiesColumns
 	 */
-	public function getPropertyColumns(): PropertiesColumns
+	public function getPropertiesColumns(): PropertiesColumns
 	{
-		return $this->propertyColumns;
+		return $this->propertiesColumns;
 	}
 }
