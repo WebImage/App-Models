@@ -1,32 +1,239 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://webimage.dev/model.schema.json",
-  "title": "Model",
-  "description": "A database model",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://webimage.com/schemas/models.json",
+  "title": "WebImage Models Schema",
+  "description": "Schema for WebImage Models YAML configuration files",
   "type": "object",
-  "properties": {
-    "type": "object",
-    "properties": {
-      "name": {
-        "type": "string",
-        "description": "Machine friendly name for a model in the singular"
-      },
-      "plural": {
-        "type": "string",
-        "description": "Machine friendly name for a model in the plural"
-      },
-      "friendly": {
-        "type": "string",
-        "description": "User readable name for the model"
-      },
-      "pluralFriendly": {
-        "type" : "string",
-        "description": "User readable pluralized name for the model"
-      },
+  "patternProperties": {
+    "^[a-zA-Z][a-zA-Z0-9_]*$": {
+      "$ref": "#/definitions/model"
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "model": {
+      "type": "object",
+      "description": "A model definition",
       "properties": {
-        "type": "object",
-        "description": "propName-definition pair of properties"
-      }
+        "name": {
+          "type": "string",
+          "description": "Machine name of the model (optional, defaults to key)"
+        },
+        "friendly": {
+          "type": "string",
+          "description": "User-friendly name of the model"
+        },
+        "pluralFriendly": {
+          "type": "string",
+          "description": "User-friendly plural name of the model"
+        },
+        "plural": {
+          "type": "string",
+          "description": "Machine plural name of the model"
+        },
+        "properties": {
+          "type": "object",
+          "description": "Property definitions for the model",
+          "patternProperties": {
+            "^[@]?[a-zA-Z][a-zA-Z0-9_]*$": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Property definition string (parsed by PropertyDefinitionParser)",
+                  "examples": [
+                    "string",
+                    "integer+",
+                    "!string(255)",
+                    "#user",
+                    "#roles[]",
+                    "#users(userRoles)",
+                    "string // Comment here",
+                    "decimal(10,2)",
+                    "boolean",
+                    "datetime"
+                  ]
+                },
+                {
+                  "$ref": "#/definitions/propertyDefinition"
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "primaryKey": {
+          "type": "array",
+          "description": "Array of property names that form the primary key",
+          "items": {
+            "type": "string"
+          }
+        },
+        "security": {
+          "type": "array",
+          "description": "Security definitions for the model",
+          "items": {
+            "$ref": "#/definitions/security"
+          }
+        },
+        "related": {
+          "type": "object",
+          "description": "Related model definitions"
+        }
+      },
+      "required": ["properties"],
+      "additionalProperties": false
+    },
+    "propertyDefinition": {
+      "type": "object",
+      "description": "Detailed property definition",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Data type of the property",
+          "enum": [
+            "string",
+            "text", 
+            "integer",
+            "decimal",
+            "date",
+            "datetime",
+            "boolean",
+            "virtual"
+          ]
+        },
+        "comment": {
+          "type": "string",
+          "description": "Comment for the property"
+        },
+        "default": {
+          "description": "Default value for the property"
+        },
+        "generationStrategy": {
+          "type": "string",
+          "description": "Generation strategy for the property",
+          "enum": ["auto", "AUTO"]
+        },
+        "multiple": {
+          "type": "boolean",
+          "description": "Whether the property can have multiple values"
+        },
+        "primaryKey": {
+          "type": "boolean",
+          "description": "Whether this property is part of the primary key"
+        },
+        "required": {
+          "type": "boolean",
+          "description": "Whether the property is required"
+        },
+        "size": {
+          "type": "integer",
+          "description": "Size constraint (length for strings, precision for decimals)",
+          "minimum": 1
+        },
+        "size2": {
+          "type": "integer",
+          "description": "Secondary size constraint (scale for decimals)",
+          "minimum": 0
+        },
+        "reference": {
+          "oneOf": [
+            {
+              "type": "string",
+              "description": "Simple reference to another model"
+            },
+            {
+              "$ref": "#/definitions/propertyReference"
+            }
+          ]
+        },
+        "security": {
+          "type": "array",
+          "description": "Security definitions for the property",
+          "items": {
+            "$ref": "#/definitions/security"
+          }
+        }
+      },
+      "required": ["type"],
+      "additionalProperties": false
+    },
+    "propertyReference": {
+      "type": "object",
+      "description": "Reference to another model",
+      "properties": {
+        "targetType": {
+          "type": "string",
+          "description": "The target model being referenced"
+        },
+        "reverseProperty": {
+          "type": "string",
+          "description": "The reverse property name on the target model"
+        },
+        "multiple": {
+          "type": "boolean",
+          "description": "Whether this reference can have multiple values"
+        },
+        "selectProperty": {
+          "type": "string",
+          "description": "Property to select from the final result in association/join"
+        },
+        "path": {
+          "type": "array",
+          "description": "Path definitions for complex references",
+          "items": {
+            "$ref": "#/definitions/propertyPath"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "propertyPath": {
+      "type": "object",
+      "description": "Path definition for complex property references",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Target model type"
+        },
+        "property": {
+          "type": "string",
+          "description": "Property name on the target model"
+        },
+        "forwardProperty": {
+          "type": "string",
+          "description": "Forward property name"
+        }
+      },
+      "required": ["type"],
+      "additionalProperties": false
+    },
+    "security": {
+      "type": "object",
+      "description": "Security access definition",
+      "properties": {
+        "role": {
+          "type": "string",
+          "description": "Role name"
+        },
+        "create": {
+          "type": "boolean",
+          "description": "Can create permission"
+        },
+        "read": {
+          "type": "boolean",
+          "description": "Can read permission"
+        },
+        "update": {
+          "type": "boolean",
+          "description": "Can update permission"
+        },
+        "delete": {
+          "type": "boolean",
+          "description": "Can delete permission"
+        }
+      },
+      "required": ["role", "create", "read", "update", "delete"],
+      "additionalProperties": false
     }
   }
 }
