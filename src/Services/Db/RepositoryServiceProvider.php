@@ -38,8 +38,6 @@ class RepositoryServiceProvider extends AbstractServiceProvider
 		$this->registerEntityService($container);
 		$this->registerModelService($container);
 		$this->registerDataTypeService($container);
-
-//		$container->addShared(TableNameHelper::class, TableNameHelper::class);
 	}
 
 	private function registerRepository(DefinitionContainerInterface $container)
@@ -77,6 +75,7 @@ class RepositoryServiceProvider extends AbstractServiceProvider
 		}
 
 		$vars = $config->get('variables');
+
 		foreach($modelFiles as $modelFile) {
 			$models = DictionaryTypeHelper::load($modelFile, $vars);
 			foreach($models as $model) {
