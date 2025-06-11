@@ -12,14 +12,15 @@ class DictionaryTypeHelper
 	/**
 	 * Loads types from file (string) or array
 	 * @param string|array|Config $types
+	 * @param Dictionary|null $dynamicValues
 	 * @return array
 	 */
-	public static function load($types, Dictionary $dynamicValues): array
+	public static function load($types, Dictionary $dynamicValues = null): array
 	{
 		return self::loadByType($types, $dynamicValues);
 	}
 
-	private static function loadByType($types, Dictionary $dynamicValues): array
+	private static function loadByType($types, Dictionary $dynamicValues = null): array
 	{
 		if (is_string($types)) return self::loadFromFile($types, $dynamicValues);
 		else if (is_iterable($types)) return self::loadFromArray($types, $dynamicValues);
@@ -29,10 +30,10 @@ class DictionaryTypeHelper
 
 	/**
 	 * @param string $typesFile
-	 * @param Dictionary $dynamicValues
+	 * @param Dictionary|null $dynamicValues
 	 * @return ModelDefinition[]
 	 */
-	private static function loadFromFile(string $typesFile, Dictionary $dynamicValues): array
+	private static function loadFromFile(string $typesFile, Dictionary $dynamicValues = null): array
 	{
 		$parser = new YamlModelCompiler();
 		$models = [];
@@ -54,10 +55,10 @@ class DictionaryTypeHelper
 
 	/**
 	 * @param iterable $loadTypes
-	 * @param Dictionary $dynamicValues
+	 * @param Dictionary|null $dynamicValues
 	 * @return array
 	 */
-	private static function loadFromArray(iterable $loadTypes, Dictionary $dynamicValues): array
+	private static function loadFromArray(iterable $loadTypes, Dictionary $dynamicValues = null): array
 	{
 		$types = [];
 
@@ -71,10 +72,10 @@ class DictionaryTypeHelper
 	/**
 	 * Updated model values that might be dynamically set using $varName - which will typically be defined in "webimage/models.variables" config.
 	 * @param ModelDefinition $model
-	 * @param Dictionary $dynamicValues
+	 * @param Dictionary|null $dynamicValues
 	 * @return void
 	 */
-	private static function injectVariables(ModelDefinition $model, Dictionary $dynamicValues): void
+	private static function injectVariables(ModelDefinition $model, Dictionary $dynamicValues = null): void
 	{
 		// Currently, this is only supported on the dataType value of each property
 		foreach($model->getProperties() as $property) {
@@ -89,15 +90,15 @@ class DictionaryTypeHelper
 	/**
 	 * Replace $varName with the value from the dynamicValues dictionary
 	 * @param string $value
-	 * @param Dictionary $dynamicValues
+	 * @param Dictionary|null $dynamicValues
 	 * @return array|string|string[]
 	 */
-	private static function injectVariableValues(string $value, Dictionary $dynamicValues)
+	private static function injectVariableValues(string $value, Dictionary $dynamicValues = null)
 	{
 		if (preg_match_all('/\$[a-zA-Z_][a-zA-Z_0-9]*/', $value, $matches)) {
 			foreach($matches[0] as $match) {
 				$varName = substr($match, 1);
-				if (isset($dynamicValues[$varName])) {
+				if ($dynamicValues !== NULL && isset($dynamicValues[$varName])) {
 					$value = str_replace($match, $dynamicValues[$varName], $value);
 				}
 			}
