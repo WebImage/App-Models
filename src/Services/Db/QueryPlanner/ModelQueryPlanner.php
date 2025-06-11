@@ -89,6 +89,7 @@ class ModelQueryPlanner
 
 	/**
 	 * Plan a single-valued property
+	 * @param Query $query
 	 * @param TablePlan $tablePlan
 	 * @param ModelDefinitionInterface $modelDef
 	 * @param PropertyDefinition $propDef
@@ -103,10 +104,12 @@ class ModelQueryPlanner
 	/**
 	 * Plan for properties that reference other models.  A referenced property can be lazily or eagerly loaded.  Branch here to handle both cases.
 	 *
+	 * @param Query $query
 	 * @param TablePlan $tablePlan
 	 * @param ModelDefinitionInterface $modelDef
 	 * @param PropertyDefinition $propDef
 	 * @return void
+	 * @throws Exception
 	 */
 	private function planSingleValueVirtualProperty(Query $query, TablePlan $tablePlan, ModelDefinitionInterface $modelDef, PropertyDefinition $propDef)
 	{

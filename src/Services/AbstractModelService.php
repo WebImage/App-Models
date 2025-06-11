@@ -11,11 +11,13 @@ abstract class AbstractModelService implements ModelServiceInterface
 	use RepositoryAwareTrait;
 
 	/**
-	 * @return ModelDefinitionInterface[]
+	 * @return Model[]
 	 */
 	public function all(): array
 	{
-		return $this->getRepository()->getDictionaryService()->getModelDefinitions();
+		return array_map(function(ModelDefinitionInterface $modelDef) {
+			return $this->getModel($modelDef->getName());
+		}, $this->getRepository()->getDictionaryService()->getModelDefinitions());
 	}
 
 	public function getModel(string $name): ?Model
