@@ -1,5 +1,7 @@
 <?php
 
+use WebImage\Models\Commands\GenerateModelClassesCommand;
+use WebImage\Models\Services\CommandGeneration\GenerateModelClassCommandProvider;
 use WebImage\Models\TypeFields\Type;
 use WebImage\Models\Properties\ValueMapper\BooleanMapper;
 use WebImage\Models\Properties\ValueMapper\DateTimeMapper;
@@ -10,7 +12,13 @@ use WebImage\Models\View\EntityListHelper;
 return [
 	'console' => [
 		'commands' => [
-			\WebImage\Models\Commands\ImportModelsCommand::class
+			\WebImage\Models\Commands\ImportModelsCommand::class,
+			\WebImage\Models\Commands\GenerateModelClassesCommand::class
+		]
+	],
+	'serviceManager' => [
+		'providers' => [
+			GenerateModelClassCommandProvider::class
 		]
 	],
 	'webimage/models' => [
@@ -29,6 +37,10 @@ return [
 			'WebImage.DataTypes.Date' => ['friendly' => 'Date'/* , 'formElement' => 'date' */, 'field' => Type::DATE],
 			'WebImage.DataTypes.DateTime' => ['friendly' => 'Date/Time'/* , 'formElement' => 'datetime' */, 'mapper' => 'datetime', 'view' => 'models/propertytypes/datetime', 'field' => Type::DATETIME],
 			'WebImage.DataTypes.Boolean' => ['friendly' => 'True/False'/* , 'formElement' => 'toggle' */, 'field' => Type::BOOLEAN, 'mapper' => 'boolean'],
+			'WebImage.DataTypes.Name' => ['friendly' => 'Name', 'fields' => [
+				['key' => 'first', 'name' => 'First', 'type' => Type::STRING],
+				['key' => 'last', 'name' => 'Last', 'type' => Type::STRING]
+			]],
 ////			'WebImage.DataTypes.User' => ['name' => 'User'/* , 'formElement' => 'text' */, 'mapper' => 'userRef', 'field' => ['type' => Type::INTEGER]],
 ////			'WebImage.DataTypes.File' => ['name' => 'File'/* , 'formElement' => 'upload' */, 'mapper' => 'fileRef', 'field' => ['type' => Type::INTEGER]],
 ////			['type' => 'WebImage.DataTypes.EmbeddedMedia', 'name' => 'Embedded Media'/* , 'formElement' => 'text' */, 'mapper' => 'embeddedMedia', 'fields' => [
@@ -65,7 +77,8 @@ return [
 			'decimal' => 'WebImage.DataTypes.Decimal',
 			'integer' => 'WebImage.DataTypes.Integer',
 			'string' => 'WebImage.DataTypes.String',
-			'text' => 'WebImage.DataTypes.Text'
+			'text' => 'WebImage.DataTypes.Text',
+			'name' => 'WebImage.DataTypes.Name'
 		]
 	],
 	'views' => ['helpers' => [
