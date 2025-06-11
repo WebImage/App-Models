@@ -15,7 +15,7 @@ class MultiValueProperty extends AbstractProperty implements MultiValuePropertyI
 
 	public function __construct()
 	{
-		parent::__construct();
+		parent::__construct(); // Calls reset(), which instantiates $this->values
 		$this->originalValues = new MultiValueCollection();
 	}
 
@@ -30,8 +30,15 @@ class MultiValueProperty extends AbstractProperty implements MultiValuePropertyI
 	/**
 	 * @inheritdoc
 	 */
-	public function setValues(array $values)
+	public function setValues(iterable $values)
 	{
+		// Allow direct set
+		if ($values instanceof MultiValueCollection) {
+			$this->values = $values;
+			return;
+		}
+
+		// Otherwise, reset values and add each value
 		$this->values = new MultiValueCollection();
 
 		foreach ($values as $value) {

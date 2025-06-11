@@ -14,9 +14,9 @@ interface MultiValuePropertyInterface extends PropertyInterface
 	/**
 	 * Sets the root values
 	 *
-	 * @param SingleValuePropertyInterface[] $values
+	 * @param iterable $values
 	 */
-	public function setValues(array $values);
+	public function setValues(iterable $values);
 
 	/**
 	 * Get the original values
