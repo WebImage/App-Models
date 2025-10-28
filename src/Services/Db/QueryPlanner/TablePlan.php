@@ -17,7 +17,8 @@ class TablePlan implements SelectQueryBuilderInterface, EntityBuilderInterface
 	private string $tableAlias;
 	private array  $propertyPlans        = []; // Standard non-multi-value properties
 	private array  $propertyJoins        = []; // Optional joins for properties that reference virtual tables
-	private array  $multiValueProperties = []; // Multi-value properties
+	/** @var TablePlan[] A table plan for retrieving multi-valued properties, e.g. TablePlan for simple values for PropertyTablePlan for reference tables */
+//	private array  $multiValueProperties = []; // Multi-value properties
 //	private array $joins = [];
 	private array $where = [];
 
@@ -74,29 +75,29 @@ class TablePlan implements SelectQueryBuilderInterface, EntityBuilderInterface
 		$this->propertyPlans[$property] = $columnPlan;
 	}
 
-	public function hasMultiValueProperty(string $property): bool
-	{
-		return array_key_exists($property, $this->multiValueProperties);
-	}
+//	public function hasMultiValueProperty(string $property): bool
+//	{
+//		return array_key_exists($property, $this->multiValueProperties);
+//	}
 
-	public function getMultiValueProperty(string $property): TablePlan
-	{
-		if (!array_key_exists($property, $this->multiValueProperties)) {
-			throw new \InvalidArgumentException('Property "' . $property . '" does not exist');
-		}
+//	public function getMultiValueProperty(string $property): TablePlan
+//	{
+//		if (!array_key_exists($property, $this->multiValueProperties)) {
+//			throw new \InvalidArgumentException('Property "' . $property . '" does not exist');
+//		}
+//
+//		return $this->multiValueProperties[$property];
+//	}
 
-		return $this->multiValueProperties[$property];
-	}
-
-	public function addMultiValueProperty(string $property, TablePlan $propertyTablePlan): void
-	{
-		$this->multiValueProperties[$property] = $propertyTablePlan;
-	}
-
-	public function getMultiValueProperties(): array
-	{
-		return $this->multiValueProperties;
-	}
+//	public function addMultiValueProperty(string $property, TablePlan $propertyTablePlan): void
+//	{
+//		$this->multiValueProperties[$property] = $propertyTablePlan;
+//	}
+//
+//	public function getMultiValueProperties(): array
+//	{
+//		return $this->multiValueProperties;
+//	}
 
 	public function hasPropertyReference(string $property): bool
 	{
@@ -153,23 +154,20 @@ class TablePlan implements SelectQueryBuilderInterface, EntityBuilderInterface
 		$propertyLoader = new PropertyLoader($repo, $connectionManager);
 		$entities = new EntityCollection($repo->getEntityService(), $propertyLoader);
 
-//		$model = $repo->getModelService()->getModel($this->getModelName());
-//		$modelDef = $model->getDef();
 		foreach($results as $result) {
 			$entity = $repo->createEntity($this->getModelName());
-//			$entity = new LazyEntity($modelDef->getName(), $repo, $propertyLoader);
-			$this->buildEntity($repo, $connectionManager/*, $modelDef*/, $entity, $result, $entities);
+			$this->buildEntity($repo, $connectionManager, $entity, $result, $entities);
 			$entities[] = $entity;
 		}
 
 		return $entities;
 	}
 
-	public function buildEntity(RepositoryInterface $repo, ConnectionManager $connectionManager/*, ModelDefinitionInterface $modelDef*/, EntityStub $entityStub, array $result, PropertyLoaderInterface $propertyLoader): void
+	public function buildEntity(RepositoryInterface $repo, ConnectionManager $connectionManager, EntityStub $entityStub, array $result, PropertyLoaderInterface $propertyLoader): void
 	{
 		foreach($this->getPropertyPlans() as $propertyPlan) {
 			if ($propertyPlan instanceof EntityBuilderInterface) {
-				$propertyPlan->buildEntity($repo, $connectionManager/*, $modelDef*/, $entityStub, $result, $propertyLoader);
+				$propertyPlan->buildEntity($repo, $connectionManager, $entityStub, $result, $propertyLoader);
 			} else {
 				echo '<pre>';print_r($propertyPlan); die(__FILE__ . ':' . __LINE__ . PHP_EOL);
 			}

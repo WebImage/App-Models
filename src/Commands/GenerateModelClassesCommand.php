@@ -2,406 +2,190 @@
 
 namespace WebImage\Models\Commands;
 
-use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Output\OutputInterface;
-use WebImage\Application\AbstractCommand;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 use WebImage\Application\ApplicationInterface;
-use WebImage\Config\Config;
-use WebImage\Models\Compiler\YamlModelCompiler;
-use WebImage\Models\Defs\ModelDefinition;
-use WebImage\Models\Defs\PropertyDefinition;
-use WebImage\Models\Entities\Model;
+use WebImage\Commands\Command;
+use WebImage\Console\FlagOption;
+use WebImage\Console\InputInterface;
+use WebImage\Console\OutputInterface;
+use WebImage\Console\ValueOption;
+use WebImage\Models\Actions\ConsoleProgressHandler;
+use WebImage\Models\Actions\GenerateClassesAction;
+use WebImage\Models\Providers\FileModelDefinitionProvider;
+use WebImage\Models\Providers\ModelDefinitionChangeDetector;
+use WebImage\Models\Providers\ModelDefinitionProviderInterface;
+use WebImage\Models\Providers\ModelDefinitionWatcher;
 use WebImage\Models\Services\RepositoryInterface;
 
-class GenerateModelClassesCommand extends AbstractCommand
+
+class GenerateModelClassesCommand extends Command
 {
-	private ?string $baseNamespace;
-	private ?string $outputDir;
+    private ?string $baseNamespace;
+    private ?string $outputDir;
+    private ?string $templateDir;
 
-	public function __construct(?string $name = null, ?string $baseNamespace = null, ?string $outputDir = null)
-	{
-		$this->baseNamespace = $baseNamespace;
-		$this->outputDir     = $outputDir;
-		parent::__construct($name);
-	}
-
-	protected function configure()
-	{
-		$this->setName('models:classes')
-			 ->setDescription('Generate entity and repository classes from YAML model definitions')
-			 ->setHelp('Generate strongly typed entity and repository classes based on YAML model files');
-
-//		$this->addOption('models-dir', 'm', InputOption::VALUE_REQUIRED, 'Directory containing YAML model files', 'config/models');
-		$this->addOption('output-dir', 'o', InputOption::VALUE_REQUIRED, 'Output directory for generated classes');
-		$this->addOption('namespace', 'm', InputOption::VALUE_REQUIRED, 'Base namespace for generated classes');
-		$this->addOption('force', 'f', InputOption::VALUE_NONE, 'Force regeneration of all files (including non-base classes)');
-		$this->addOption('watch', 'w', InputOption::VALUE_NONE, 'Watch for changes and regenerate automatically');
-		$this->addOption('watch-interval', 'i', InputOption::VALUE_REQUIRED, 'Watch interval in seconds', '1');
-	}
-
-	protected function execute(InputInterface $input, OutputInterface $output)
-	{
-		$force     = $input->getOption('force');
-		/** @var RepositoryInterface $repo */
-		$repo = $this->getContainer()->get(RepositoryInterface::class);
-
-		$output->writeln("<info>Generating classes for " . count($repo->getModelService()->all()) . " models(s)...</info>");
-
-		foreach($repo->getModelService()->all() as $model) {
-			$output->writeln('Processing: ' . $model->getDef()->getName());
-			$this->processModelDef($model->getDef(), $input, $output, $force);
-		}
-
-		$output->writeln("<info>Class generation complete!</info>");
-
-		return 0;
-	}
-
-	private function getConfig(): Config
-	{
-		$app = $this->getContainer()->get(ApplicationInterface::class);
-		return $app->getConfig();
-	}
-
-	private function processYamlFile(string $yamlFile, InputInterface $input, OutputInterface $output, bool $force): void
-	{
-		$modelDefinitions = $this->compiler->compileFile($yamlFile);
-
-		foreach ($modelDefinitions as $modelDef) {
-			$this->generateEntityClasses($modelDef, $input, $output, $force);
-			$this->generateRepositoryClasses($modelDef, $input, $output, $force);
-		}
-	}
-
-	private function processModelDef(ModelDefinition $modelDef, InputInterface $input, OutputInterface $output, bool $force): void
-	{
-		$this->generateEntityClasses($modelDef, $input, $output, $force);
-		$this->generateRepositoryClasses($modelDef, $input, $output, $force);
-	}
-
-	private function generateEntityClasses(ModelDefinition $modelDef, InputInterface $input, OutputInterface $output, bool $force): void
-	{
-		$className = $this->getEntityClassName($modelDef);
-
-		// Generate base entity class (always overwritten)
-		$baseClassContent = $this->generateBaseEntityClass($modelDef);
-		$baseClassPath    = $this->getBaseEntityPath($input, $modelDef);
-
-		$this->writeFile($baseClassPath, $baseClassContent, true);
-		$output->writeln("  Generated: {$baseClassPath}");
-
-		// Generate entity class (only if it doesn't exist or force is true)
-		$entityClassPath = $this->getEntityPath($input, $modelDef);
-		if (!file_exists($entityClassPath) || $force) {
-			$entityClassContent = $this->generateEntityClass($modelDef);
-			$this->writeFile($entityClassPath, $entityClassContent, $force);
-			$output->writeln("  Generated: {$entityClassPath}");
-		} else {
-			$output->writeln("  Skipped (exists): {$entityClassPath}");
-		}
-	}
-
-	private function generateRepositoryClasses(ModelDefinition $modelDef, InputInterface $input, OutputInterface $output, bool $force): void
-	{
-		// Generate base repository class (always overwritten)
-		$baseRepoContent = $this->generateBaseRepositoryClass($modelDef);
-		$baseRepoPath = $this->getBaseRepositoryPath($input, $modelDef);
-		$this->writeFile($baseRepoPath, $baseRepoContent, true);
-		$output->writeln("  Generated: {$baseRepoPath}");
-
-		// Generate repository class (only if it doesn't exist or force is true)
-		$repoClassPath = $this->getRepositoryPath($input, $modelDef);
-		if (!file_exists($repoClassPath) || $force) {
-			$repoClassContent = $this->generateRepositoryClass($modelDef);
-			$this->writeFile($repoClassPath, $repoClassContent, $force);
-			$output->writeln("  Generated: {$repoClassPath}");
-		} else {
-			$output->writeln("  Skipped (exists): {$repoClassPath}");
-		}
-	}
-
-	private function generateBaseEntityClass(ModelDefinition $modelDef): string
-	{
-		$className = $this->getEntityClassName($modelDef);
-		$baseClassName = $className . 'Base';
-
-		$namespace = $this->baseNamespace . '\\Entities\\Generated';
-
-		$properties = [];
-		$methods = [];
-
-		foreach ($modelDef->getProperties() as $propDef) {
-			$propertyMethods = $this->generatePropertyMethods($propDef);
-			$methods = array_merge($methods, $propertyMethods);
-		}
-
-		$methodsString = implode("\n\n", $methods);
-
-		return "<?php
-
-/**
- * THIS FILE IS GENERATED - DO NOT MODIFY
- * Generated on: " . date('Y-m-d H:i:s') . "
- * Model: {$modelDef->getName()}
- */
-
-namespace {$namespace};
-
-use WebImage\\Models\\Services\\ModelEntity;
-use WebImage\\Models\\Entities\\EntityStub;
-
-abstract class {$baseClassName} extends ModelEntity
-{
-{$methodsString}
-}";
-	}
-
-	private function generateEntityClass(ModelDefinition $modelDef): string
-	{
-		$className = $this->getEntityClassName($modelDef);
-		$baseClassName = $className . 'Base';
-		$namespace = $this->baseNamespace . '\\Entities';
-		$baseNamespace = $this->baseNamespace . '\\Entities\\Generated';
-
-		return "<?php
-
-namespace {$namespace};
-
-use {$baseNamespace}\\{$baseClassName};
-
-class {$className} extends {$baseClassName}
-{
-    // Add custom methods and overrides here
-}";
-	}
-
-	private function generateBaseRepositoryClass(ModelDefinition $modelDef): string
-	{
-		$entityClassName = $this->getEntityClassName($modelDef);
-		$repoClassName = $this->getRepositoryClassName($modelDef);
-		$baseRepoClassName = $repoClassName . 'Base';
-		$namespace = $this->baseNamespace . '\\Repositories\\Generated';
-		$entityNamespace = $this->baseNamespace . '\\Entities';
-
-		$modelName = $modelDef->getName();
-		$primaryKeys = $modelDef->getPrimaryKeys()->keys();
-		$primaryKeyType = count($primaryKeys) === 1 ? $this->getPhpType($modelDef->getProperty($primaryKeys[0])) : 'array';
-
-		return "<?php
-
-/**
- * THIS FILE IS GENERATED - DO NOT MODIFY
- * Generated on: " . date('Y-m-d H:i:s') . "
- * Model: {$modelDef->getName()}
- */
-
-namespace {$namespace};
-
-use WebImage\\Models\\Services\\ModelRepository;
-use WebImage\\Models\\Services\\RepositoryInterface;
-use WebImage\\Models\\Entities\\EntityStub;
-use WebImage\\Core\\Collection;
-use {$entityNamespace}\\{$entityClassName};
-
-abstract class {$baseRepoClassName} extends ModelRepository
-{
-    public function __construct(RepositoryInterface \$repo)
+    public function __construct(?string $name = null, ?string $baseNamespace = null, ?string $outputDir = null, ?string $templateDir = null)
     {
-        parent::__construct(\$repo, '{$modelName}');
+        $this->baseNamespace = $baseNamespace;
+        $this->outputDir     = $outputDir;
+        $this->templateDir   = $templateDir;
+        parent::__construct($name);
     }
-    
-    public function get({$primaryKeyType} \$id): ?{$entityClassName}
+
+    protected function configure(): void
     {
-        \$entity = \$this->query()->get(\$id);
-        return \$entity === null ? null : \$this->entityToModel(\$entity);
+        $this->setDescription('Generate entity and repository classes from YAML model definitions');
+        $this->addOption(ValueOption::required('output-dir', 'Output directory for generated classes', 'o'));
+        $this->addOption(ValueOption::optional('template-dir', 'Directory containing template files', 't'));
+        $this->addOption(FlagOption::create('force', 'Force regeneration of all files (including non-base classes)', 'f'));
+        $this->addOption(FlagOption::create('watch', 'Watch for changes and regenerate automatically', 'w'));
+        $this->addOption(ValueOption::optional('watch-interval', 'Watch interval in seconds', 'i', '1'));
     }
-    
-    public function create(): {$entityClassName}
+
+    public function execute(InputInterface $input, OutputInterface $output): int
     {
-        return \$this->entityToModel(parent::createEntity());
-    }
-    
-    public function save({$entityClassName} \$model): {$entityClassName}
-    {
-        \$entity = \$model->getEntity();
-        if (!(\$entity instanceof \\WebImage\\Models\\Entities\\Entity)) {
-            throw new \\InvalidArgumentException('Entity must be an instance of Entity');
+        $watch = $input->getOption('watch');
+        if ($watch) {
+            return $this->executeWatch($input, $output);
         }
-        
-        return \$this->entityToModel(\$entity->save());
+        return $this->executeOnce($input, $output);
     }
-    
-    protected function entityToModel(EntityStub \$entity): {$entityClassName}
+
+    private function executeOnce(InputInterface $input, OutputInterface $output): int
     {
-        return new {$entityClassName}(\$entity);
+        $force     = $input->getOption('force');
+        /** @var RepositoryInterface $repo */
+        $repo = $this->getContainer()->get(RepositoryInterface::class);
+
+        /** @var ModelDefinitionProviderInterface $provider */
+        $provider = $this->getContainer()->get(ModelDefinitionProviderInterface::class);
+
+        // Check for changes
+        $detector = new ModelDefinitionChangeDetector();
+        $changes = $detector->detectChanges($provider, $repo->getDictionaryService());
+
+        if (!$force && !$changes->hasChanges()) {
+            $output->writeln("<info>No changes detected. Use --force to regenerate all files.</info>");
+
+            return 0;
+        }
+
+        if ($changes->hasChanges()) {
+            $this->reportChanges($changes, $output);
+        }
+
+        // Create and execute the action
+        /** @var ApplicationInterface $app */
+        $app = $this->getContainer()->get(ApplicationInterface::class);
+
+        $action = new GenerateClassesAction(
+            $repo,
+            $app,
+            $this->baseNamespace,
+            $this->templateDir
+        );
+
+        $options = [
+            'output-dir' => $this->getOutputDir($input),
+            'template-dir' => $this->getTemplateDir($input),
+            'force' => $force
+        ];
+
+        // Create progress handler for console output
+        $progress = new ConsoleProgressHandler($output);
+
+        // Execute action with progress reporting
+        $result = $action->execute($changes, $options, $progress);
+
+        return $result->isSuccess() ? 0 : 1;
     }
-}";
-	}
 
-	private function generateRepositoryClass(ModelDefinition $modelDef): string
-	{
-		$repoClassName = $this->getRepositoryClassName($modelDef);
-		$baseRepoClassName = $repoClassName . 'Base';
-		$namespace = $this->baseNamespace . '\\Repositories';
-		$baseNamespace = $this->baseNamespace . '\\Repositories\\Generated';
-
-		return "<?php
-
-namespace {$namespace};
-
-use {$baseNamespace}\\{$baseRepoClassName};
-
-class {$repoClassName} extends {$baseRepoClassName}
-{
-    // Add custom repository methods here
-}";
-	}
-
-	private function generatePropertyMethods(PropertyDefinition $propDef): array
-	{
-		$methods = [];
-		$propertyName = $propDef->getName();
-		$methodName = ucfirst($propertyName);
-		$phpType = $this->getPhpType($propDef);
-		$isNullable = !$propDef->isRequired();
-		$nullablePrefix = $isNullable ? '?' : '';
-
-		// Getter
-		$getter = "    public function get{$methodName}(): {$nullablePrefix}{$phpType}
+    private function executeWatch(InputInterface $input, OutputInterface $output): int
     {
-        return \$this->entity['{$propertyName}'];
-    }";
+        /** @var ModelDefinitionProviderInterface $provider */
+        $provider = $this->getContainer()->get(ModelDefinitionProviderInterface::class);
 
-		// Setter
-		$setter = "    public function set{$methodName}({$nullablePrefix}{$phpType} \${$propertyName}): void
+        if (!($provider instanceof FileModelDefinitionProvider)) {
+            $output->writeln("<e>Watch mode only supports file-based model definitions</e>");
+            return 1;
+        }
+
+        $interval = (int) $input->getOption('watch-interval');
+        $output->writeln("<info>Watching for changes (interval: {$interval}s)...</info>");
+        $output->writeln("Press Ctrl+C to stop watching");
+
+        $watcher = new ModelDefinitionWatcher($provider);
+
+        $watcher->watch(
+            function($changes, $changedFiles) use ($input, $output) {
+                $output->writeln("\n<info>Changes detected in files:</info>");
+                foreach ($changedFiles as $file) {
+                    $output->writeln("  - " . basename($file));
+                }
+
+                $this->reportChanges($changes, $output);
+                $output->writeln("");
+
+                // Regenerate
+                $this->executeOnce($input, $output);
+            },
+            $interval,
+            function() use ($input, $output) {
+                // Initial generation
+                $output->writeln("<info>Performing initial generation...</info>");
+                $this->executeOnce($input, $output);
+                $output->writeln("\n<info>Watching for changes...</info>");
+            }
+        );
+
+        return 0;
+    }
+
+    private function reportChanges($changes, OutputInterface $output): void
     {
-        \$this->entity['{$propertyName}'] = \${$propertyName};
-    }";
+        if (!empty($changes->getAdded())) {
+            $output->writeln("<info>Added models: " . implode(', ', $changes->getAdded()) . "</info>");
+        }
+        if (!empty($changes->getModified())) {
+            $output->writeln("<info>Modified models: " . implode(', ', $changes->getModified()) . "</info>");
+        }
+        if (!empty($changes->getRemoved())) {
+            $output->writeln("<info>Removed models: " . implode(', ', $changes->getRemoved()) . "</info>");
+        }
+    }
 
-		$methods[] = $getter;
-		$methods[] = $setter;
+    private function getTemplateDir(InputInterface $input): string
+    {
+        $templateDir = $input->getOption('template-dir');
+        if (!empty($templateDir)) {
+            return $templateDir;
+        }
 
-		return $methods;
-	}
+        if ($this->templateDir !== null) {
+            return $this->templateDir;
+        }
 
-	private function getPhpType(PropertyDefinition $propDef): string
-	{
-		if ($propDef->isVirtual() && $propDef->hasReference()) {
-			$targetModel = $propDef->getReference()->getTargetModel();
-			$entityClassName = $this->modelNameToClassName($targetModel) . 'Entity';
+        /** @var ApplicationInterface $app */
+        $app = $this->getContainer()->get(ApplicationInterface::class);
+        return $app->getProjectPath() . '/src/Models/Templates';
+    }
 
-			if ($propDef->isMultiValued()) {
-				return 'array'; // Could be enhanced to use typed arrays in PHP 8+
-			}
+    /**
+     * Allow input arguments to override the default output directory.
+     * @param InputInterface $input
+     * @return string
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
+     */
+    private function getOutputDir(InputInterface $input): string
+    {
+        $outputDir = $input->getOption('output-dir');
+        if (!empty($outputDir)) return rtrim($outputDir, '/\\');
 
-			return $this->baseNamespace . '\\Entities\\' . $entityClassName;
-		}
+        /** @var ApplicationInterface $app */
+        $app = $this->getContainer()->get(ApplicationInterface::class);
 
-		$dataType = $propDef->getDataType();
-
-		if ($propDef->isMultiValued()) {
-			return 'array';
-		}
-
-		switch($dataType) {
-			case 'integer':
-				return 'int';
-			case 'decimal':
-				return 'float';
-			case 'boolean':
-				return 'bool';
-			case 'date':
-			case 'datetime':
-				return '\\DateTime';
-			case 'string':
-			case 'text':
-				return 'string';
-			default:
-				return 'mixed';
-		}
-	}
-
-	private function getEntityClassName(ModelDefinition $modelDef): string
-	{
-		return $this->modelNameToClassName($modelDef->getName()) . 'Entity';
-	}
-
-	private function getRepositoryClassName(ModelDefinition $modelDef): string
-	{
-		return $this->modelNameToClassName($modelDef->getName()) . 'Repository';
-	}
-
-	private function modelNameToClassName(string $modelName): string
-	{
-		return str_replace(' ', '', ucwords(str_replace(['_', '-'], ' ', $modelName)));
-	}
-
-	private function getEntityPath(InputInterface $input, ModelDefinition $modelDef): string
-	{
-		$className = $this->getEntityClassName($modelDef);
-		return $this->getOutputDir($input) . '/Entities/' . $className . '.php';
-	}
-
-	private function getBaseEntityPath(InputInterface $input, ModelDefinition $modelDef): string
-	{
-		$className = $this->getEntityClassName($modelDef) . 'Base';
-
-		return $this->getOutputDir($input) . '/Entities/Generated/' . $className . '.php';
-	}
-
-	private function getRepositoryPath(InputInterface $input, ModelDefinition $modelDef): string
-	{
-		$className = $this->getRepositoryClassName($modelDef);
-		return $this->getOutputDir($input) . '/Repositories/' . $className . '.php';
-	}
-
-	private function getBaseRepositoryPath(InputInterface $input, ModelDefinition $modelDef): string
-	{
-		$className = $this->getRepositoryClassName($modelDef) . 'Base';
-
-		return $this->getOutputDir($input) . '/Repositories/Generated/' . $className . '.php';
-	}
-
-	private function writeFile(string $path, string $content, bool $overwrite = false): void
-	{
-		$directory = dirname($path);
-
-		if (!is_dir($directory)) {
-			mkdir($directory, 0755, true);
-		}
-
-		if (!file_exists($path) || $overwrite) {
-			file_put_contents($path, $content);
-		}
-	}
-
-	/**
-	 * Allow input arguments to override the default namespace.
-	 * @param InputInterface $input
-	 * @return string
-	 */
-	private function getNamespace(InputInterface $input): string
-	{
-		$namespace = $input->getOption('namespace');
-		if (!empty($namespace)) return $namespace;
-
-		return ($this->baseNamespace ?? 'App') . '\\Models';
-	}
-
-	/**
-	 * Allow input arguments to override the default output directory.
-	 * @param InputInterface $input
-	 * @return string
-	 */
-	private function getOutputDir(InputInterface $input): string
-	{
-		$outputDir = $input->getOption('output-dir');
-		if (!empty($outputDir)) return rtrim($outputDir, '/\\');
-
-		/** @var ApplicationInterface $app */
-		$app = $this->getContainer()->get(ApplicationInterface::class);
-
-		return $this->outputDir ?? $app->getProjectPath() . '/src/Models';
-	}
+        return $this->outputDir ?? $app->getProjectPath() . '/src/Models';
+    }
 }

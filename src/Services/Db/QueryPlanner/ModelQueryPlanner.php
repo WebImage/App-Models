@@ -127,19 +127,19 @@ class ModelQueryPlanner
 		$this->createLazyReferenceTablePlan($tablePlan, $propDef, $refModelDef, $refModelTable, $refModelTableAlias);
 	}
 
-	private function createEagerReferenceTablePlan(TablePlan $tablePlan, PropertyDefinition $propDef, ModelDefinition $refModelDef, string $refModelTable, string $refModelTableAlias)
-	{
-		$columns = [];
-		foreach ($refModelDef->getProperties() as $refPropDef) {
-			$propRefColumns = $this->getColumnsForReferencedModelPropertyColumnPlan($refPropDef, $refModelTableAlias);
-			echo '<pre>';print_r($propRefColumns); die(__FILE__ . ':' . __LINE__ . PHP_EOL);
-			$columns[]      = new ReferencePropertyPlan($propDef->getModel(), $propDef->getName(), $refPropDef->getName(), $propRefColumns);
-		}
-
-		$referencedProperty = new ReferencedModelPlan($propDef->getModel(), $propDef->getName(), $refModelDef->getName(), $columns);
-
-		$tablePlan->addPropertyPlan($propDef->getName(), $referencedProperty);
-	}
+//	private function createEagerReferenceTablePlan(TablePlan $tablePlan, PropertyDefinition $propDef, ModelDefinition $refModelDef, string $refModelTable, string $refModelTableAlias)
+//	{
+//		$columns = [];
+//		foreach ($refModelDef->getProperties() as $refPropDef) {
+//			$propRefColumns = $this->getColumnsForReferencedModelPropertyColumnPlan($refPropDef, $refModelTableAlias);
+//			echo '<pre>';print_r($propRefColumns); die(__FILE__ . ':' . __LINE__ . PHP_EOL);
+//			$columns[]      = new ReferencePropertyPlan($propDef->getModel(), $propDef->getName(), $refPropDef->getName(), $propRefColumns);
+//		}
+//
+//		$referencedProperty = new ReferencedModelPlan($propDef->getModel(), $propDef->getName(), $refModelDef->getName(), $columns);
+//
+//		$tablePlan->addPropertyPlan($propDef->getName(), $referencedProperty);
+//	}
 
 	/**
 	 * @throws Exception
@@ -263,6 +263,7 @@ class ModelQueryPlanner
 
 	private function planMultiValueProperty(Query $query, TablePlan $tablePlan, ModelDefinitionInterface $modelDef, PropertyDefinition $propDef)
 	{
+		echo 'ModelQueryPlanner: ' . $propDef->getModel() . '.' . $propDef->getName() . ' (' . ($propDef->isVirtual() ? 'Virtual':'Normal') . ')<br/>' . PHP_EOL;
 		if ($propDef->isVirtual()) $this->planMultiValueVirtualProperty($query, $tablePlan, $modelDef, $propDef);
 		else $this->planMultiValueInlineProperty($query, $tablePlan, $modelDef, $propDef);
 	}
@@ -278,7 +279,9 @@ class ModelQueryPlanner
 		$this->planSingleValueProperties($query, $virtualTablePlan, $refModelDef);
 		$this->addPropertyTableWhereConditions($virtualTablePlan, $modelDef, $propertyTable);
 
-		$tablePlan->addMultiValueProperty($propDef->getName(), $virtualTablePlan);
+		$multiValuePropertyPlan = new MultiValuePropertyPlan($propDef->getModel(), $propDef->getName(), $virtualTablePlan);
+		$tablePlan->addPropertyPlan($propDef->getName(), $multiValuePropertyPlan);
+//		$tablePlan->addMultiValueProperty($propDef->getName(), $virtualTablePlan);
 	}
 
 	private function planMultiValueInlineProperty(Query $query, TablePlan $tablePlan, ModelDefinitionInterface $modelDef, PropertyDefinition $propDef)
@@ -289,7 +292,10 @@ class ModelQueryPlanner
 		$this->planSingleInlineValueProperty($query, $propertyTablePlan, $propDef);
 		$this->addPropertyTableWhereConditions($propertyTablePlan, $modelDef, $propertyTable);
 
-		$tablePlan->addMultiValueProperty($propDef->getName(), $propertyTablePlan);
+		$multiValuePropertyPlan = new MultiValuePropertyPlan($propDef->getModel(), $propDef->getName(), $propertyTablePlan);
+		$tablePlan->addPropertyPlan($propDef->getName(), $multiValuePropertyPlan);
+
+//		$tablePlan->addMultiValueProperty($propDef->getName(), $propertyTablePlan);
 	}
 
 	private function addPropertyTableWhereConditions(TablePlan $tablePlan, ModelDefinitionInterface $modelDef, string $propertyTable): void

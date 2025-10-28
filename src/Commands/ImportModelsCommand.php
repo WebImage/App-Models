@@ -2,168 +2,261 @@
 
 namespace WebImage\Models\Commands;
 
-use Symfony\Component\Console\Helper\Table;
-use Symfony\Component\Console\Helper\TableSeparator;
-use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Output\OutputInterface;
-use WebImage\Application\AbstractCommand;
 use WebImage\Application\ApplicationInterface;
+use WebImage\Commands\Command;
+use WebImage\Console\FlagOption;
+use WebImage\Console\InputInterface;
+use WebImage\Console\OutputInterface;
+use WebImage\Console\Table;
+use WebImage\Console\TableSeparator;
+use WebImage\Console\ValueOption;
+use WebImage\Models\Actions\ConsoleProgressHandler;
+use WebImage\Models\Actions\ImportModelsAction;
 use WebImage\Models\Defs\PropertyDefinition;
 use WebImage\Models\Defs\PropertyPathDefinition;
-use WebImage\Models\Defs\ModelDefinition;
 use WebImage\Models\Entities\Model;
 use WebImage\Models\Helpers\PropertyReferenceHelper;
+use WebImage\Models\Providers\FileModelDefinitionProvider;
+use WebImage\Models\Providers\ModelDefinitionChangeDetector;
+use WebImage\Models\Providers\ModelDefinitionProviderInterface;
+use WebImage\Models\Providers\ModelDefinitionWatcher;
 use WebImage\Models\Services\ModelServiceInterface;
 use WebImage\Models\Services\RepositoryInterface;
-use WebImage\Models\Compiler\YamlModelCompiler;
 
-class ImportModelsCommand extends AbstractCommand
+class ImportModelsCommand extends Command
 {
-	protected function configure()
-	{
-		$this->setName('models:import')
-			->setDescription('Imports models from configured \'webimage/models\' config key')
-			->setHelp('Import models from YAML files');
-//		$this->addOption('watch', 'w', InputOption::VALUE_NONE, 'Watch the types file for updates and automatically import new types');
-		$this->addOption('limit-model', 'm', InputOption::VALUE_REQUIRED, 'Limit the model(s) to be dumped.  Specify multiple models comma delimited');
-		$this->addOption('debug', 'd', InputOption::VALUE_NONE, 'Dumps the structure of an import without importing any actual values');
-	}
+    protected function configure(): void
+    {
+        $this->setDescription('Imports models from configured \'webimage/models\' config key');
+        $this->addOption(ValueOption::optional('limit-model', 'Limit the model(s) to be imported. Specify multiple models comma delimited', 'm'));
+        $this->addOption(FlagOption::create('debug', 'Dumps the structure of an import without importing any actual values', 'd'));
+        $this->addOption(FlagOption::create('watch', 'Watch for changes and import automatically', 'w'));
+        $this->addOption(ValueOption::optional('watch-interval', 'Watch interval in seconds', 'i', '1'));
+    }
 
-	protected function execute(InputInterface $input, OutputInterface $output)
-	{
-//		if ($input->getOption('watch')) {
-//			$this->watch($input, $output, $modelsFile);
-//		} else {
-			$this->importModels($input, $output);
-//		}
+    public function execute(InputInterface $input, OutputInterface $output):int
+    {
+        $watch = $input->getOption('watch');
+        if ($watch) {
+            return $this->executeWatch($input, $output);
+        }
+        return $this->executeOnce($input, $output);
+    }
 
-		return 0;
-	}
+    private function executeOnce(InputInterface $input, OutputInterface $output): int
+    {
+        /** @var RepositoryInterface $repo */
+        $repo = $this->getContainer()->get(RepositoryInterface::class);
 
-//	protected function watch(InputInterface $input, OutputInterface $output, array $modelsFile)
-//	{
-//		$lastUpdated = null;
-//
-//		while (true) {
-//			clearstatcache();
-//			$modified = filemtime($modelsFile);
-//			if ($lastUpdated === null || $lastUpdated != $modified) {
-//				$this->importModels($input, $output, $modelsFile);
-//				$lastUpdated = $modified;
-//			}
-//			sleep(1);
-//		}
-//	}
+        /** @var ModelDefinitionProviderInterface $provider */
+        $provider = $this->getContainer()->get(ModelDefinitionProviderInterface::class);
 
-	private function importModels(InputInterface $input, OutputInterface $output)
-	{
-		/** @var RepositoryInterface $repo */
-		$repo = $this->getContainer()->get(RepositoryInterface::class);
-		$modelDefs = $repo->getDictionaryService()->getModelDefinitions();
+        // In debug mode, don't check for changes - just display structure
+        if ($input->getOption('debug')) {
+            return $this->executeDebug($input, $output);
+        }
 
-		$saveModels = [];
+        // Check for changes
+        $detector = new ModelDefinitionChangeDetector();
+        $changes = $detector->detectChanges($provider, $repo->getDictionaryService());
 
-		// First, create all model instances so that they can reference one another one save
-		foreach($modelDefs as $modelDef) {
+        if (!$changes->hasChanges()) {
+            $output->writeln("<info>No changes detected.</info>");
+            return 0;
+        }
 
-			$model = $repo->getModelService()->getModel($modelDef->getName());
+        $this->reportChanges($changes, $output);
 
-			if ($model === null) {
-				$model = $repo->getModelService()->create($modelDef->getName(), $modelDef->getPluralName(), $modelDef->getFriendlyName(), $modelDef->getFriendlyName());
-			}
+        // Create and execute the action
+        $action = new ImportModelsAction($repo);
 
-			$model->setDef($modelDef);
+        $options = [
+            'limit-model' => $input->getOption('limit-model')
+        ];
 
-			$saveModels[] = $model;
-		}
+        // Create progress handler for console output
+        $progress = new ConsoleProgressHandler($output);
 
-		if ($input->getOption('debug')) {
-			$this->displayStructure($input, $output, $repo->getModelService(), $saveModels);
-		} else {
-			foreach ($saveModels as $saveModel) {
-				$saveModel->save();
-			}
-			$output->writeln(date('Y-m-d H:i:s') . ' Updated');
-		}
-	}
+        // Execute action with progress reporting
+        $result = $action->execute($changes, $options, $progress);
 
-	/**
-	 * @param OutputInterface $output
-	 * @param ModelServiceInterface $modelService
-	 * @param Model[] $models
-	 */
-	public function displayStructure(InputInterface $input, OutputInterface $output, ModelServiceInterface $modelService, array $models)
-	{
-		$table = new Table($output);
-		$table->setHeaders(['Property', 'Type', '# Values', 'Reference', 'Relationship', 'Comment']);
-		$first = true;
+        return $result->isSuccess() ? 0 : 1;
+    }
 
-		foreach ($models as $model) {
-			$modelDef = $model->getDef();
+    private function executeDebug(InputInterface $input, OutputInterface $output): int
+    {
+        /** @var RepositoryInterface $repo */
+        $repo = $this->getContainer()->get(RepositoryInterface::class);
+        $modelDefs = $repo->getDictionaryService()->getModelDefinitions();
 
-			if (!$first) $table->addRow(new TableSeparator());
+        // Filter by limit-model option if provided
+        $limitModels = $input->getOption('limit-model');
+        if ($limitModels) {
+            $limitModelNames = array_map('trim', explode(',', $limitModels));
+            $modelDefs = array_filter($modelDefs, function($modelDef) use ($limitModelNames) {
+                return in_array($modelDef->getName(), $limitModelNames);
+            });
+        }
 
-			$first = false;
-			$table->addRow([$modelDef->getPluralName()]);
-			$table->addRow(new TableSeparator());
+        $models = [];
+        foreach ($modelDefs as $modelDef) {
+            $model = $repo->getModelService()->getModel($modelDef->getName());
+            if ($model === null) {
+                $model = $repo->getModelService()->create(
+                    $modelDef->getName(),
+                    $modelDef->getPluralName(),
+                    $modelDef->getFriendlyName(),
+                    $modelDef->getFriendlyName()
+                );
+            }
+            $model->setDef($modelDef);
+            $models[] = $model;
+        }
 
-			foreach ($modelDef->getProperties() as $propDef) {
-				$success = strlen($propDef->getComment()) == 0 || $this->getRelationshipDescription($modelService, $propDef) == $propDef->getComment();
-//				if ($success) continue;
+        $this->displayStructure($input, $output, $repo->getModelService(), $models);
 
-				$table->addRow([
-//					'  - ' . $propDef->getName(),
-//					'  - ' . $modelDef->getName() . '.' . $propDef->getName(),
-					'  .' . $propDef->getName(),
-					$propDef->getDataType(),
-					$propDef->isMultiValued() ? 'Multi' : 'Single',
-					$this->getReferenceDescription($propDef),
-					$this->getRelationshipDescription($modelService, $propDef),
-					/*$success ? 'SUCCESS' : */$propDef->getComment()
-				]);
-			}
-		}
+        return 0;
+    }
 
-		$table->render();
-	}
+    private function executeWatch(InputInterface $input, OutputInterface $output): int
+    {
+        /** @var ModelDefinitionProviderInterface $provider */
+        $provider = $this->getContainer()->get(ModelDefinitionProviderInterface::class);
 
-	private function getReferenceDescription(PropertyDefinition $propDef)
-	{
-		if (!$propDef->hasReference()) return '';
+        if (!($provider instanceof FileModelDefinitionProvider)) {
+            $output->writeln("<e>Watch mode only supports file-based model definitions</e>");
+            return 1;
+        }
 
-		$desc = $propDef->getReference()->getTargetModel();
+        $interval = (int) $input->getOption('watch-interval');
+        $output->writeln("<info>Watching for changes (interval: {$interval}s)...</info>");
+        $output->writeln("Press Ctrl+C to stop watching");
 
-		if ($propDef->getReference()->getReverseProperty() !== null) $desc .= '.' . $propDef->getReference()->getReverseProperty();
+        $watcher = new ModelDefinitionWatcher($provider);
 
-		if (count($propDef->getReference()->getPath()) > 0) {
+        $watcher->watch(
+            function($changes, $changedFiles) use ($input, $output) {
+                $output->writeln("\n<info>Changes detected in files:</info>");
+                foreach ($changedFiles as $file) {
+                    $output->writeln("  - " . basename($file));
+                }
 
-			$desc .= ' (via ';
-			$desc .= implode(', ', array_map(function(PropertyPathDefinition $path) {
-				$desc = $path->getTargetModel();
-				if ($path->getProperty() !== null) $desc .= '.' . $path->getProperty();
-				if ($path->getForwardProperty() !== null) $desc .= ' on ' . $path->getTargetModel() . '.' . $path->getForwardProperty();
-				return $desc;
-			}, $propDef->getReference()->getPath()));
-			$desc .= ')';
-		}
+                $this->reportChanges($changes, $output);
+                $output->writeln("");
 
-		if ($propDef->getReference()->getSelectProperty() !== null) {
-			$desc .= ' @ ' . $propDef->getReference()->getSelectProperty();
-		}
+                // Re-import
+                $this->executeOnce($input, $output);
+            },
+            $interval,
+            function() use ($input, $output) {
+                // Initial import
+                $output->writeln("<info>Performing initial import...</info>");
+                $this->executeOnce($input, $output);
+                $output->writeln("\n<info>Watching for changes...</info>");
+            }
+        );
 
-		return $desc;
-	}
+        return 0;
+    }
 
-	private function getRelationshipDescription(ModelServiceInterface $modelService, PropertyDefinition $propDef)
-	{
-		if (!$propDef->hasReference()) return '';
+    private function reportChanges($changes, OutputInterface $output): void
+    {
+        if (!empty($changes->getAdded())) {
+            $output->writeln("<info>Added models: " . implode(', ', $changes->getAdded()) . "</info>");
+        }
+        if (!empty($changes->getModified())) {
+            $output->writeln("<info>Modified models: " . implode(', ', $changes->getModified()) . "</info>");
+        }
+        if (!empty($changes->getRemoved())) {
+            $output->writeln("<info>Removed models: " . implode(', ', $changes->getRemoved()) . "</info>");
+        }
+    }
 
-		return (string) PropertyReferenceHelper::getAssociationCardinality($modelService, $propDef);
-	}
+    /**
+     * Display the structure of models being imported (debug mode)
+     *
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     * @param ModelServiceInterface $modelService
+     * @param Model[] $models
+     */
+    public function displayStructure(InputInterface $input, OutputInterface $output, ModelServiceInterface $modelService, array $models): void
+    {
+        $table = new Table($output);
+        $table->setHeaders(['Property', 'Type', '# Values', 'Reference', 'Relationship', 'Comment']);
+        $first = true;
 
-	protected function getApp(): ApplicationInterface
-	{
-		return $this->getContainer()->get(ApplicationInterface::class);
-	}
+        foreach ($models as $model) {
+            $modelDef = $model->getDef();
+
+            if (!$first) {
+                $table->addRow(new TableSeparator());
+            }
+
+            $first = false;
+            $table->addRow([$modelDef->getPluralName()]);
+            $table->addRow(new TableSeparator());
+
+            foreach ($modelDef->getProperties() as $propDef) {
+                $table->addRow([
+                    '  .' . $propDef->getName(),
+                    $propDef->getDataType(),
+                    $propDef->isMultiValued() ? 'Multi' : 'Single',
+                    $this->getReferenceDescription($propDef),
+                    $this->getRelationshipDescription($modelService, $propDef),
+                    $propDef->getComment()
+                ]);
+            }
+        }
+
+        $table->render();
+    }
+
+    private function getReferenceDescription(PropertyDefinition $propDef): string
+    {
+        if (!$propDef->hasReference()) {
+            return '';
+        }
+
+        $desc = $propDef->getReference()->getTargetModel();
+
+        if ($propDef->getReference()->getReverseProperty() !== null) {
+            $desc .= '.' . $propDef->getReference()->getReverseProperty();
+        }
+
+        if (count($propDef->getReference()->getPath()) > 0) {
+            $desc .= ' (via ';
+            $desc .= implode(', ', array_map(function(PropertyPathDefinition $path) {
+                $desc = $path->getTargetModel();
+                if ($path->getProperty() !== null) {
+                    $desc .= '.' . $path->getProperty();
+                }
+                if ($path->getForwardProperty() !== null) {
+                    $desc .= ' on ' . $path->getTargetModel() . '.' . $path->getForwardProperty();
+                }
+                return $desc;
+            }, $propDef->getReference()->getPath()));
+            $desc .= ')';
+        }
+
+        if ($propDef->getReference()->getSelectProperty() !== null) {
+            $desc .= ' @ ' . $propDef->getReference()->getSelectProperty();
+        }
+
+        return $desc;
+    }
+
+    private function getRelationshipDescription(ModelServiceInterface $modelService, PropertyDefinition $propDef): string
+    {
+        if (!$propDef->hasReference()) {
+            return '';
+        }
+
+        return (string) PropertyReferenceHelper::getAssociationCardinality($modelService, $propDef);
+    }
+
+    protected function getApp(): ApplicationInterface
+    {
+        return $this->getContainer()->get(ApplicationInterface::class);
+    }
 }

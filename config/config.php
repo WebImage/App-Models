@@ -1,6 +1,9 @@
 <?php
 
 use WebImage\Models\Commands\GenerateModelClassesCommand;
+use WebImage\Models\Commands\ImportModelsCommand;
+use WebImage\Models\Commands\ModelsSyncCommand;
+use WebImage\Models\Providers\ModelDefinitionServiceProvider;
 use WebImage\Models\Services\CommandGeneration\GenerateModelClassCommandProvider;
 use WebImage\Models\TypeFields\Type;
 use WebImage\Models\Properties\ValueMapper\BooleanMapper;
@@ -12,13 +15,15 @@ use WebImage\Models\View\EntityListHelper;
 return [
 	'console' => [
 		'commands' => [
-			\WebImage\Models\Commands\ImportModelsCommand::class,
-			\WebImage\Models\Commands\GenerateModelClassesCommand::class
+			'models:import' => ImportModelsCommand::class,
+			'models:classes' => GenerateModelClassesCommand::class,
+            'models:sync' => ModelsSyncCommand::class
 		]
 	],
 	'serviceManager' => [
 		'providers' => [
-			GenerateModelClassCommandProvider::class
+			GenerateModelClassCommandProvider::class,
+            ModelDefinitionServiceProvider::class
 		]
 	],
 	'webimage/models' => [
