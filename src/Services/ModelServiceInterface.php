@@ -62,8 +62,8 @@ interface ModelServiceInterface extends RepositoryAwareInterface
 
 //	/**
 //	 * @param $friendlyName
-//	 * @param NodeType $sourceType
-//	 * @param NodeType $targetType
+//	 * @param NodeType $sourceModel
+//	 * @param NodeType $targetModel
 //	 * @param string|null $assocTypeQName
 //	 * @param bool $allowDuplicates
 //	 * @param int|null $sourceMin
@@ -77,8 +77,8 @@ interface ModelServiceInterface extends RepositoryAwareInterface
 //	 */
 //	public function createAssociation(
 //		$friendlyName,
-//		NodeType $sourceType,
-//		NodeType $targetType,
+//		NodeType $sourceModel,
+//		NodeType $targetModel,
 //		$assocTypeQName = null,
 //		$allowDuplicates = true,
 //		$sourceMin = null,

@@ -6,7 +6,7 @@ use Symfony\Component\Yaml\Yaml;
 use WebImage\Models\Defs\ModelDefinition;
 use WebImage\Models\Services\Db\DoctrineTypeMap;
 
-class YamlModelCompiler extends ModelCompiler
+class YamlModelDefinitionHydrator extends ModelDefinitionHydrator
 {
 	/**
 	 * @param $file
@@ -14,6 +14,6 @@ class YamlModelCompiler extends ModelCompiler
 	 */
 	public function compileFile($file): array
 	{
-		return $this->compile( Yaml::parseFile($file) );
+		return $this->hydrateModelDefinitions( Yaml::parseFile($file) );
 	}
 }

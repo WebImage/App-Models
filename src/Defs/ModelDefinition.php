@@ -159,7 +159,7 @@ class ModelDefinition implements ModelDefinitionInterface
 	/**
 	 * @inheritdoc
 	 */
-	public function getPrimaryKeys(): ?ImmutableDictionary
+	public function getPrimaryKeys(): ImmutableDictionary
 	{
 		$keys = [];
 

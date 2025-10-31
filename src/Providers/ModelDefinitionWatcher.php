@@ -26,7 +26,7 @@ class ModelDefinitionWatcher
     /**
      * Watch for file changes and execute callback when changes detected
      *
-     * @param callable $callback Function to call with ModelDefinitionChangeSet when changes detected
+     * @param callable(ModelDefinitionChangeSet $changeSet, string[] $fileNames): void  $callback Function to call with ModelDefinitionChangeSet when changes detected
      * @param int $interval Check interval in seconds
      * @param callable|null $onStart Optional callback to run before watching starts
      */

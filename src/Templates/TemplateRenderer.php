@@ -23,7 +23,7 @@ class TemplateRenderer
      */
     public function render(string $templateName, array $variables): string
     {
-        $templatePath = $this->templateDir . '/' . $templateName . '.php';
+        $templatePath = $this->templateDir . '/' . $templateName . '.tpl';
 
         if (!file_exists($templatePath)) {
             throw new \RuntimeException("Template not found: {$templatePath}");

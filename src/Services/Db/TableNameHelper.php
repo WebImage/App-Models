@@ -155,16 +155,16 @@ class TableNameHelper
 	 * Get a table name for a join operation
 	 *
 	 * @param ModelServiceInterface $modelService
-	 * @param string $sourceType
-	 * @param string $targetType
+	 * @param string $sourceModel
+	 * @param string $targetModel
 	 * @param string|null $sourceProperty
 	 * @param string|null $targetProperty
 	 * @return string
 	 */
-	public static function getAssociationTableName(ModelServiceInterface $modelService, string $sourceType, string $targetType, ?string $sourceProperty=null, ?string $targetProperty=null): string
+	public static function getAssociationTableName(ModelServiceInterface $modelService, string $sourceModel, string $targetModel, ?string $sourceProperty=null, ?string $targetProperty=null): string
 	{
-		$sourceTypeDef = $modelService->getModel($sourceType)->getDef();
-		$targetTypeDef = $modelService->getModel($targetType)->getDef();
+		$sourceModelDef = $modelService->getModel($sourceModel)->getDef();
+		$targetModelDef = $modelService->getModel($targetModel)->getDef();
 
 		/**
 		 * If this is a source table property reference to another target
@@ -172,13 +172,13 @@ class TableNameHelper
 		 * after the source table name + property)
 		 */
 		if ($sourceProperty !== null && $targetProperty === null) {
-			return self::getTableNameFromDef($sourceTypeDef, $sourceProperty);
+			return self::getTableNameFromDef($sourceModelDef, $sourceProperty);
 		}
 
 		// Sort tables alphabetically to ensure that duplicate table is not created with the reverse definition, e.g. typeA_typeB vs typeB_typeA
 		$tables = [
-			self::getTableNameFromDef($sourceTypeDef, $sourceProperty),
-			self::getTableNameFromDef($targetTypeDef, $targetProperty)
+			self::getTableNameFromDef($sourceModelDef, $sourceProperty),
+			self::getTableNameFromDef($targetModelDef, $targetProperty)
 		];
 
 		sort($tables);

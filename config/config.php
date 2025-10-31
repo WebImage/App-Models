@@ -1,8 +1,8 @@
 <?php
 
-use WebImage\Models\Commands\GenerateModelClassesCommand;
+use WebImage\Models\Commands\GenerateClassesCommand;
 use WebImage\Models\Commands\ImportModelsCommand;
-use WebImage\Models\Commands\ModelsSyncCommand;
+use WebImage\Models\Commands\SyncModelsCommand;
 use WebImage\Models\Providers\ModelDefinitionServiceProvider;
 use WebImage\Models\Services\CommandGeneration\GenerateModelClassCommandProvider;
 use WebImage\Models\TypeFields\Type;
@@ -16,8 +16,8 @@ return [
 	'console' => [
 		'commands' => [
 			'models:import' => ImportModelsCommand::class,
-			'models:classes' => GenerateModelClassesCommand::class,
-            'models:sync' => ModelsSyncCommand::class
+			'models:classes' => GenerateClassesCommand::class,
+			'models:sync' => SyncModelsCommand::class
 		]
 	],
 	'serviceManager' => [
@@ -84,7 +84,9 @@ return [
 			'string' => 'WebImage.DataTypes.String',
 			'text' => 'WebImage.DataTypes.Text',
 			'name' => 'WebImage.DataTypes.Name'
-		]
+		],
+        'templateDirectory' => __DIR__ . '/../resources/templates/models',
+        'compiledPath' => 'models/compiled-models.php'
 	],
 	'views' => ['helpers' => [
 		'entityList' => EntityListHelper::class,

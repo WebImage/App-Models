@@ -80,7 +80,7 @@ interface ModelDefinitionInterface
 	public function setConfig(Config $config): void;
 
 	/**
-	 * @return ?ImmutableDictionary|PropertyDefinition[]|<string propertyName, PropertyDefinition>
+	 * @return ImmutableDictionary|PropertyDefinition[]|<string propertyName, PropertyDefinition>
 	 */
-	public function getPrimaryKeys(): ?ImmutableDictionary;
+	public function getPrimaryKeys(): ImmutableDictionary;
 }

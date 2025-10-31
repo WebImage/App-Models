@@ -36,7 +36,7 @@ class RepositoryServiceProvider extends AbstractServiceProvider
         $this->registerDataTypeService($container);
     }
 
-    private function registerRepository(DefinitionContainerInterface $container)
+    private function registerRepository(DefinitionContainerInterface $container): void
     {
         $container->addShared(RepositoryInterface::class, function(
             EventManagerInterface $eventManager,

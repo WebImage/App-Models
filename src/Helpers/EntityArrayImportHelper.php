@@ -28,7 +28,7 @@ class EntityArrayImportHelper
 		return self::populateEntityFromArray($entityService, $entityService->create($modelName), $data);
 	}
 
-	public static function populateEntityFromArray(EntityServiceInterface $entityService, EntityStub $entity, array $data): Entity
+	public static function populateEntityFromArray(EntityServiceInterface $entityService, EntityStub $entity, array $data): EntityStub
 	{
 		$model = $entityService->getRepository()->getModelService()->getModel($entity->getModel());
 
@@ -41,14 +41,15 @@ class EntityArrayImportHelper
 		return $entity;
 	}
 
-	/**
-	 * Extract property values from data and add to entity
-	 *
-	 * @param ModelDefinitionInterface $modelDef
-	 * @param array $data
-	 */
-	private static function populateProperties(EntityStub $entity, ModelDefinitionInterface $modelDef, array $data)
-	{
+    /**
+     * Extract property values from data and add to entity
+     *
+     * @param EntityStub $entity
+     * @param ModelDefinitionInterface $modelDef
+     * @param array $data
+     */
+	private static function populateProperties(EntityStub $entity, ModelDefinitionInterface $modelDef, array $data): void
+    {
 		$allowedModelProperties = self::getAllowedModelProperties($modelDef);
 		$propertyKeys           = array_keys($data);
 		self::assertValidProperties($allowedModelProperties, $propertyKeys);
@@ -75,8 +76,8 @@ class EntityArrayImportHelper
 	 * @param PropertyDefinition $propDef
 	 * @param $value
 	 */
-	private static function populateProperty(EntityStub $entity, PropertyDefinition $propDef, /* mixed */ $value)
-	{
+	private static function populateProperty(EntityStub $entity, PropertyDefinition $propDef, /* mixed */ $value): void
+    {
 		if ($propDef->isVirtual()) {
 			if ($propDef->getReference() === null) return;
 
@@ -94,8 +95,8 @@ class EntityArrayImportHelper
 	 * @param PropertyDefinition $propDef
 	 * @param $value
 	 */
-	private static function populateVirtualProperty(EntityStub $entity, PropertyDefinition $propDef, /* mixed */ $value)
-	{
+	private static function populateVirtualProperty(EntityStub $entity, PropertyDefinition $propDef, /* mixed */ $value): void
+    {
 		if ($propDef->isMultiValued()) {
 			echo 'Multi-valued: ' . $propDef->getModel() . '.' . $propDef->getName() . PHP_EOL;
 		} else {

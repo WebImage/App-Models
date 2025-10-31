@@ -2,7 +2,6 @@
 
 namespace WebImage\Models\Actions;
 
-use WebImage\Application\ApplicationInterface;
 use WebImage\Models\Defs\ModelDefinition;
 use WebImage\Models\Defs\PropertyDefinition;
 use WebImage\Models\Providers\ModelDefinitionChangeSet;
@@ -14,8 +13,9 @@ use WebImage\Models\Templates\TemplateRenderer;
  */
 class GenerateClassesAction implements ModelActionInterface
 {
+    const ALLOW_FORCE = true;
     private RepositoryInterface $repository;
-    private ApplicationInterface $application;
+    private string $modelSrcDir;
     private ?string $baseNamespace;
     private ?string $templateDir;
     private ?ProgressHandlerInterface $progress;
@@ -23,12 +23,12 @@ class GenerateClassesAction implements ModelActionInterface
 
     public function __construct(
         RepositoryInterface $repository,
-        ApplicationInterface $application,
-        ?string $baseNamespace = null,
-        ?string $templateDir = null
+        string              $modelSrcDir,
+        ?string             $baseNamespace = null,
+        ?string             $templateDir = null
     ) {
         $this->repository = $repository;
-        $this->application = $application;
+        $this->modelSrcDir = $modelSrcDir;
         $this->baseNamespace = $baseNamespace;
         $this->templateDir = $templateDir;
     }
@@ -42,13 +42,14 @@ class GenerateClassesAction implements ModelActionInterface
         $this->progress = $progress ?? new NullProgressHandler();
         $this->result = ModelActionResult::success();
 
-        $outputDir = $options['output-dir'] ?? $this->application->getProjectPath() . '/src/Models';
+//        $outputDir = $options['output-dir'] ?? $this->application->getProjectPath() . '/src/Models';
+        $outputDir = $this->modelSrcDir;
         $outputDir = rtrim($outputDir, '/\\');
 
         $force = $options['force'] ?? false;
 
-        $templateDir = $options['template-dir'] ?? $this->templateDir ?? $this->application->getProjectPath() . '/src/Models/Templates';
-        $renderer = new TemplateRenderer($templateDir);
+//        $templateDir = /*$options['template-dir'] ?? */ $this->templateDir ?? $this->application->getProjectPath() . '/src/Models/Templates';
+        $renderer = new TemplateRenderer($this->templateDir);
 
         $models = $this->repository->getModelService()->all();
         $count = count($models);
@@ -150,7 +151,7 @@ class GenerateClassesAction implements ModelActionInterface
 
         // Generate entity class (only if it doesn't exist or force is true)
         $entityClassPath = $this->getEntityPath($outputDir, $modelDef);
-        if (!file_exists($entityClassPath) || $force) {
+        if (!file_exists($entityClassPath) || (self::ALLOW_FORCE && $force)) {
             $entityClassContent = $this->generateEntityClass($modelDef, $renderer);
             $this->writeFile($entityClassPath, $entityClassContent, $force);
             $message = "  Generated: {$entityClassPath}";
@@ -190,7 +191,8 @@ class GenerateClassesAction implements ModelActionInterface
 
         // Generate repository class (only if it doesn't exist or force is true)
         $repoClassPath = $this->getRepositoryPath($outputDir, $modelDef);
-        if (!file_exists($repoClassPath) || $force) {
+
+        if (!file_exists($repoClassPath)|| (self::ALLOW_FORCE && $force)) {
             $repoClassContent = $this->generateRepositoryClass($modelDef, $renderer);
             $this->writeFile($repoClassPath, $repoClassContent, $force);
             $message = "  Generated: {$repoClassPath}";
@@ -292,7 +294,9 @@ class GenerateClassesAction implements ModelActionInterface
         $propertyName = $propDef->getName();
         $methodName = ucfirst($propertyName);
         $phpType = $this->getPhpType($propDef);
+
         $isNullable = !$propDef->isRequired();
+//        $nullablePrefix = ($isNullable && $phpType != 'mixed') ? '?' : '';
         $nullablePrefix = $isNullable ? '?' : '';
 
         // Getter
@@ -323,7 +327,7 @@ class GenerateClassesAction implements ModelActionInterface
                 return 'array';
             }
 
-            return $this->baseNamespace . '\\Entities\\' . $entityClassName;
+            return '\\' . ltrim($this->baseNamespace, '\\') . '\\Entities\\' . $entityClassName;
         }
 
         $dataType = $propDef->getDataType();
@@ -340,7 +344,8 @@ class GenerateClassesAction implements ModelActionInterface
             case 'boolean':
                 return 'bool';
             case 'date':
-            case 'datetime':
+            case 'datetime': // dateTime is the correct formatting, but adding datetime here just in case this ever changes in the future
+            case 'dateTime':
                 return '\\DateTime';
             case 'string':
             case 'text':

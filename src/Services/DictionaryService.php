@@ -34,17 +34,26 @@ class DictionaryService implements RepositoryAwareInterface
 
 	public function __construct()
 	{
-		/**
-		 * Instantiate type object
-		 */
-		$this->modelDefs    = new Dictionary();
-		$this->modelAliases = new Dictionary();
+		$this->resetModelDefinitions();
 		/**
 		 * Instantiate property types object
 		 */
 		$this->propertyTypes       = new Dictionary();
 		$this->propertyTypeAliases = new Dictionary();
 	}
+
+    /**
+     * Reset model definitions back to their original state
+     * @return void
+     */
+    public function resetModelDefinitions(): void
+    {
+        /**
+         * Instantiate model object
+         */
+        $this->modelDefs    = new Dictionary();
+        $this->modelAliases = new Dictionary();
+    }
 
 	/**
 	 * Get a model by name
@@ -76,11 +85,22 @@ class DictionaryService implements RepositoryAwareInterface
 	/**
 	 * @param ModelDefinitionInterface $model
 	 */
-	public function addModelDefinition(ModelDefinitionInterface $model)
+	public function addModelDefinition(ModelDefinitionInterface $model): void
 	{
+        $this->removeModelDefinition($model->getName());
 		$this->modelDefs->set($model->getName(), $model);
 		$this->modelAliases->set($model->getPluralName(), $model->getName());
 	}
+
+    public function removeModelDefinition(string $modelName): void
+    {
+        /** @var ModelDefinitionInterface|null $model */
+        $model = $this->modelDefs->get($modelName);
+        if ($model === null) return;
+
+        $this->modelDefs->del($model->getName());
+        $this->modelAliases->del($model->getPluralName());
+    }
 
 //	/**
 //	 * @param ModelDefinitionInterface $model

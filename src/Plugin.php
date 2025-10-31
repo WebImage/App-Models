@@ -5,7 +5,7 @@ namespace WebImage\Models;
 use WebImage\Models\Defs\ModelDefinition;
 use WebImage\Models\Properties\ValueMapper\ValueMapResolverServiceProvider;
 use WebImage\Models\Services\Db\RepositoryServiceProvider;
-use WebImage\Models\Compiler\YamlModelCompiler;
+use WebImage\Models\Compiler\YamlModelDefinitionHydrator;
 use WebImage\Application\AbstractPlugin;
 use WebImage\Application\ApplicationInterface;
 use WebImage\Application\HttpApplication;

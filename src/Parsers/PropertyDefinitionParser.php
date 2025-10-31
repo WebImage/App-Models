@@ -26,7 +26,7 @@ class PropertyDefinitionParser
 			'size' => null,
 			'size2' => null,
 			'reference' => [
-				'targetType' => null,
+				'targetModel' => null,
 				'path' => [],
 				'selectProperty' => null
 			]
@@ -60,7 +60,7 @@ class PropertyDefinitionParser
 
 		// Type name
 		if ($propertyInfo['type'] == 'virtual') {
-			$propertyInfo['reference']['targetType'] = $lookahead['value'];
+			$propertyInfo['reference']['targetModel'] = $lookahead['value'];
 		} else {
 			$propertyInfo['type'] = $lookahead['value'];
 		}

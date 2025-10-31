@@ -5,7 +5,7 @@ namespace WebImage\Models\Defs;
 class PropertyPathDefinition
 {
 	/** @var string */
-	private $targetType;
+	private $targetModel;
 	/** @var ?string */
 	private $property;
 	/** @var ?string */
@@ -13,12 +13,12 @@ class PropertyPathDefinition
 
 	/**
 	 * PropertyPathDefinition constructor.
-	 * @param string $targetType
+	 * @param string $targetModel
 	 * @param string $property
 	 */
-	public function __construct(string $targetType, ?string $property, ?string $forwardProperty)
+	public function __construct(string $targetModel, ?string $property, ?string $forwardProperty)
 	{
-		$this->targetType      = $targetType;
+		$this->targetModel      = $targetModel;
 		$this->property        = $property;
 		$this->forwardProperty = $forwardProperty;
 	}
@@ -28,15 +28,15 @@ class PropertyPathDefinition
 	 */
 	public function getTargetModel(): string
 	{
-		return $this->targetType;
+		return $this->targetModel;
 	}
 
 	/**
-	 * @param string $targetType
+	 * @param string $targetModel
 	 */
-	public function setTargetType(?string $targetType): void
+	public function setTargetModel(?string $targetModel): void
 	{
-		$this->targetType = $targetType;
+		$this->targetModel = $targetModel;
 	}
 
 	/**

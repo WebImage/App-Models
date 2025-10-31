@@ -122,4 +122,37 @@ class FileModelDefinitionProvider implements ModelDefinitionProviderInterface
         $this->cachedMetadata = null;
         $this->cachedDefinitions = null;
     }
+
+    /**
+     * @inheritDoc
+     */
+    public function reload(): void
+    {
+        $this->clearCache();
+    }
+
+    /**
+     * Get source file metadata for compilation
+     *
+     * @return SourceFileMetadata[]
+     */
+    public function getSourceFileMetadata(): array
+    {
+        $metadata = [];
+
+        foreach ($this->modelFiles as $file) {
+            if (!file_exists($file)) {
+                continue;
+            }
+
+            $lastModified = new \DateTime();
+            $lastModified->setTimestamp(filemtime($file));
+
+            $hash = md5_file($file);
+
+            $metadata[] = new SourceFileMetadata($file, $hash, $lastModified);
+        }
+
+        return $metadata;
+    }
 }

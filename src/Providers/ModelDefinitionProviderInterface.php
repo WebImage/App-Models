@@ -28,4 +28,11 @@ interface ModelDefinitionProviderInterface
      * @return ModelDefinitionInterface[]
      */
     public function getAllModelDefinitions(): array;
+    /**
+     * Force provider to reload all model definitions.
+     * Useful for when definitions may have been updated externall
+     *
+     * @return void
+     */
+    public function reload(): void;
 }

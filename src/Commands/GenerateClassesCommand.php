@@ -5,31 +5,46 @@ namespace WebImage\Models\Commands;
 use WebImage\Commands\Command;
 use WebImage\Console\ConsoleInput;
 use WebImage\Console\ConsoleOutput;
+use WebImage\Console\FlagOption;
 use WebImage\Console\ValueOption;
 use WebImage\Models\Actions\ConsoleProgressHandler;
-use WebImage\Models\Actions\ImportModelsAction;
+use WebImage\Models\Actions\GenerateClassesAction;
 use WebImage\Models\Providers\ModelDefinitionChangeSet;
 use WebImage\Models\Services\RepositoryInterface;
 
 /**
- * Import compiled model definitions into the database
+ * Generate entity and repository classes from compiled model definitions
  * This command requires that models have been compiled first via SyncModelsCommand
  */
-class ImportModelsCommand extends Command
+class GenerateClassesCommand extends Command
 {
     private string $compiledModelsPath;
+    private ?string $defaultBaseNamespace;
+    private ?string $defaultOutputDir;
+    private ?string $defaultTemplateDir;
 
-    public function __construct(?string $name = null, ?string $compiledModelsPath = null)
-    {
+    public function __construct(
+        ?string $name = null,
+        ?string $compiledModelsPath = null,
+        ?string $defaultBaseNamespace = null,
+        ?string $defaultOutputDir = null,
+        ?string $defaultTemplateDir = null
+    ) {
         $this->compiledModelsPath = $compiledModelsPath ?? 'generated/compiled-models.php';
+        $this->defaultBaseNamespace = $defaultBaseNamespace ?? 'App\\Models';
+        $this->defaultOutputDir = $defaultOutputDir;
+        $this->defaultTemplateDir = $defaultTemplateDir;
         parent::__construct($name);
     }
 
     protected function configure(): void
     {
-        $this->setName('models:import')
-            ->setDescription('Import compiled model definitions into database')
-            ->addOption(ValueOption::optional('limit-model', 'Comma-separated model names to import', 'l'));
+        $this->setName('models:classes')
+            ->setDescription('Generate entity and repository classes from compiled model definitions')
+            ->addOption(ValueOption::required('output-dir', 'Output directory for generated classes', 'o'))
+            ->addOption(ValueOption::optional('template-dir', 'Template directory', 't'))
+            ->addOption(ValueOption::optional('base-namespace', 'Base namespace for generated classes', 'n'))
+            ->addOption(FlagOption::create('force', 'Force regeneration of all files', 'f'));
     }
 
     public function execute(ConsoleInput $input, ConsoleOutput $output): int
@@ -48,18 +63,32 @@ class ImportModelsCommand extends Command
         $progress = new ConsoleProgressHandler($output);
 
         // Build options from input
+        $outputDir = $input->getOption('output-dir') ?? $this->defaultOutputDir;
+        if (empty($outputDir)) {
+            $output->error('Output directory is required. Use --output-dir option.');
+            return 1;
+        }
+
         $options = [
-            'limit-model' => $input->getOption('limit-model')
+            'output-dir' => rtrim($outputDir, '/\\'),
+            'template-dir' => $input->getOption('template-dir') ?? $this->defaultTemplateDir,
+            'base-namespace' => $input->getOption('base-namespace') ?? $this->defaultBaseNamespace,
+            'force' => $input->getOption('force', false)
         ];
 
         // Create action
-        $action = new ImportModelsAction($repository);
+        $action = new GenerateClassesAction(
+            $repository,
+            $options['output-dir'],
+            $options['base-namespace'],
+            $options['template-dir']
+        );
 
         // Create full changeset (mark all models as modified)
         $changeSet = $this->createFullChangeSet($repository);
 
         // Execute action
-        $output->writeln('<info>Importing model definitions...</info>');
+        $output->writeln('<info>Generating entity and repository classes...</info>');
         $output->writeln(str_repeat('-', 60));
 
         $result = $action->execute($changeSet, $options, $progress);
@@ -67,11 +96,13 @@ class ImportModelsCommand extends Command
         // Display result
         $output->writeln('');
         if ($result->isSuccess()) {
-            $importedCount = $result->getData('imported_count');
-            $output->success("Import completed! Imported {$importedCount} model(s).");
+            $generatedCount = $result->getData('generated_count');
+            $skippedCount = $result->getData('skipped_count');
+            $output->success('Class generation completed!');
+            $output->info("Generated: {$generatedCount}, Skipped: {$skippedCount}");
             return 0;
         } else {
-            $output->error('Import failed.');
+            $output->error('Class generation failed.');
             foreach ($result->getMessagesByLevel('error') as $msg) {
                 $output->error('  ' . $msg['message']);
             }

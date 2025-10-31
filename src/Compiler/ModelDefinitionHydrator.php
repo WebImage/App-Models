@@ -13,14 +13,17 @@ use WebImage\Models\Defs\ModelDefinition;
 use WebImage\Models\Defs\PropertyDefinition;
 use WebImage\Models\Security\RoleAccessInterface;
 
-class ModelCompiler
+/**
+ * 2025-10-28  Robert Jones - Renamed ModelCompiler => ModelDefinitionHydrator
+ */
+class ModelDefinitionHydrator
 {
 	/**
 	 * Compile an associative array [type-name => [definition...]]
 	 * @param array $modelDefsData
 	 * @return ModelDefinition[]|array
 	 */
-	public function compile(array $modelDefsData): array
+	public function hydrateModelDefinitions(array $modelDefsData): array
 	{
 		if (!ArrayHelper::isAssociative($modelDefsData)) throw new \RuntimeException('Only [modelName => def] model definitions are accepted at this time');
 
@@ -28,15 +31,17 @@ class ModelCompiler
 
 		foreach($modelDefsData as $modelName => $def) {
 			if (!array_key_exists('name', $def)) $def['name'] = $modelName;
-			$models[] = self::compileModelData($def);
+			$models[] = self::hydrateModelDefinition($def);
 		}
 
 		return $models;
 	}
 
-	private function compileModelData(array $struct): ModelDefinition
+	public function hydrateModelDefinition(array $struct): ModelDefinition
 	{
-		ArrayHelper::assertKeys($struct, 'model', ['name', 'properties'], ['plural', 'primaryKey', 'security', 'friendly', 'pluralFriendly', 'related']);
+        $hint = 'model';
+        if (array_key_exists('name', $struct)) $hint .= '[' . $struct['name'] . ']';
+		ArrayHelper::assertKeys($struct, $hint, ['name', 'properties'], ['plural', 'primaryKey', 'security', 'friendly', 'pluralFriendly', 'related']);
 
 		$pluralName = $struct['plural'] ?? $struct['name'];
 		$friendlyName = $struct['friendly'] ?? $struct['name'];
@@ -73,7 +78,8 @@ class ModelCompiler
 				$propertyInfo['multiple'] = true;
 			}
 
-			ArrayHelper::assertKeys($propertyInfo, 'properties['.$name.']', ['name', 'type'], ['comment', 'default', 'generationStrategy', 'multiple', 'primaryKey', 'required', 'reference', 'security', 'size', 'size2']);
+            $pathHint = sprintf('model[%s].properties[%s]', $modelDef->getName(), $name);
+			ArrayHelper::assertKeys($propertyInfo, $pathHint, ['name', 'type'], ['comment', 'default', 'generationStrategy', 'multiple', 'primaryKey', 'required', 'reference', 'security', 'size', 'size2']);
 
 			$propertyDef = new PropertyDefinition($modelDef->getName(), $propertyInfo['name'], $propertyInfo['type']);//, DoctrineTypeMap::hasDoctrineType($propertyInfo['type']));
 
@@ -81,7 +87,7 @@ class ModelCompiler
 
 			// Whether property can have multiple values
 			if ($this->doesPropertyInfoHaveValue($propertyInfo, 'multiple') && $this->assertBoolean($propertyInfo['multiple']) === true) $propertyDef->setIsMultiValued($propertyInfo['multiple']);
-			if ($this->doesPropertyInfoHaveValue($propertyInfo, 'security')) $this->addPropertyDefSecurity($propertyDef, $name, $propertyInfo['security']);
+			if ($this->doesPropertyInfoHaveValue($propertyInfo, 'security')) $this->addPropertyDefSecurity($modelDef, $propertyDef, $name, $propertyInfo['security']);
 			if ($this->doesPropertyInfoHaveValue($propertyInfo, 'comment')) $propertyDef->setComment($this->assertString($propertyInfo['comment']));
 			if ($this->doesPropertyInfoHaveValue($propertyInfo, 'default')) $propertyDef->setDefault($propertyInfo['default']);
 			if ($this->doesPropertyInfoHaveValue($propertyInfo, 'required')) $propertyDef->setIsRequired($this->assertBoolean($propertyInfo['required']));
@@ -151,7 +157,8 @@ class ModelCompiler
 		if (ArrayHelper::isAssociative($security)) throw new \RuntimeException('Security must be an array of arrays');
 
 		foreach($struct['security'] as $ix => $security) {
-			ArrayHelper::assertKeys($security, 'security['.$ix.']', ['role', 'create', 'read', 'update', 'delete']);
+            $pathHint = sprintf('model[%s].security[%s]', $modelType->getName(), $ix);
+			ArrayHelper::assertKeys($security, $pathHint, ['role', 'create', 'read', 'update', 'delete']);
 
 			$modelType->addSecurity(new RoleAccessInterface($security['role'], $security['create'], $security['read'], $security['update'], $security['delete']));
 		}
@@ -192,12 +199,12 @@ class ModelCompiler
 	private function addPropertyReference(ModelDefinitionInterface $typeDef, PropertyDefinition $propDef, array $propertyInfo)
 	{
 		$referenceData = $this->normalizePropertyReferenceType($propertyInfo['reference'], $propDef->getName(), $propertyInfo);
+        $propPathHint = sprintf('models[%s].properties[%s]', $typeDef->getName(), $propDef->getName());
+        ArrayHelper::assertKeys($propertyInfo['reference'], $propPathHint . '.reference', ['targetModel'], ['path', 'selectProperty', 'reverseProperty', 'multiple']);
 
-		ArrayHelper::assertKeys($propertyInfo['reference'], 'properties['.$propDef->getName().']', ['targetType'], ['path', 'selectProperty', 'reverseProperty', 'multiple']);
+		if ($propertyInfo['reference']['targetModel'] === null) return;
 
-		if ($propertyInfo['reference']['targetType'] === null) return;
-
-		$propertyReference = new PropertyReferenceDefinition($referenceData['targetType']);
+		$propertyReference = new PropertyReferenceDefinition($referenceData['targetModel']);
 
 		if ($referenceData['reverseProperty'] !== null) $propertyReference->setReverseProperty($referenceData['reverseProperty']);
 		if ($referenceData['multiple'] !== null) $propDef->setIsMultiValued($referenceData['multiple']);
@@ -205,7 +212,7 @@ class ModelCompiler
 
 		for($i=0; $i < count($referenceData['path']); $i ++) {
 			$path = $referenceData['path'][$i];
-			ArrayHelper::assertKeys($path, 'properties['.$propDef->getName().'][' . $i . ']', ['type', 'property', 'forwardProperty']);
+			ArrayHelper::assertKeys($path, $propPathHint . '[' . $i . ']', ['type', 'property', 'forwardProperty']);
 			$propertyReference->addPath(new PropertyPathDefinition($path['type'], $path['property'], $path['forwardProperty']));
 		}
 
@@ -215,7 +222,7 @@ class ModelCompiler
 	private function normalizePropertyReferenceType(/* mixed */ $data, string $name, array $propertyInfo)
 	{
 		$defaults = [
-			'targetType' => null,
+			'targetModel' => null,
 			'reverseProperty' => null,
 			'path' => [],
 			'multiple' => null,
@@ -224,15 +231,15 @@ class ModelCompiler
 
 		if (is_string($data)) {
 			$data = [
-				'targetType' => $data
+				'targetModel' => $data
 			];
 		}
 
 		$data = array_merge($defaults, $data);
 
 		// [] At end of type indicates "multi-value"
-		if (substr($data['targetType'], -2) == '[]') {
-			$data['targetType'] = substr($data['targetType'], 0, -2);
+		if (substr($data['targetModel'], -2) == '[]') {
+			$data['targetModel'] = substr($data['targetModel'], 0, -2);
 			$data['multiple']   = true;
 		}
 
@@ -252,12 +259,13 @@ class ModelCompiler
 		return $parsed;
 	}
 
-	private function addPropertyDefSecurity(PropertyDefinition $def, $propertyIx, array $accessLevels)
+	private function addPropertyDefSecurity(ModelDefinitionInterface $modelDef, PropertyDefinition $def, $propertyIx, array $accessLevels)
 	{
-		if (ArrayHelper::isAssociative($accessLevels)) throw new \RuntimeException('properties['.$propertyIx.'] must be an array of arrays');
+        $pathHint = sprintf('model[%s].properties[%s]', $modelDef->getName(), $def->getName());
+		if (ArrayHelper::isAssociative($accessLevels)) throw new \RuntimeException($pathHint . '['.$propertyIx.'] must be an array of arrays');
 
 		foreach($accessLevels as $ix => $access) {
-			ArrayHelper::assertKeys($access, 'properties['.$propertyIx.'].access['.$ix.']', ['role', 'create', 'read', 'update', 'delete']);
+			ArrayHelper::assertKeys($access, $pathHint . '['.$propertyIx.'].access['.$ix.']', ['role', 'create', 'read', 'update', 'delete']);
 
 			$def->addSecurity(new RoleAccessInterface($access['role'], $access['create'], $access['read'], $access['update'], $access['delete']));
 		}
